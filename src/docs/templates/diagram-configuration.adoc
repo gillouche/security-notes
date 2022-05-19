@@ -1,0 +1,11 @@
+:plantuml-server-url: https://kroki.io
+:plantuml-server-type: kroki_io
+:plantuml-format: svg
+:plantuml-svg-type: static
+:bpmn-server-url: https://kroki.io
+:bpmn-server-type: kroki_io
+:bpmn-format: svg
+:bpmn-svg-type: static
+:nomnoml-server-url: https://kroki.io
+:nomnoml-server-type: kroki_io
+:nomnoml-format: svg

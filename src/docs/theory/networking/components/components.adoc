@@ -1,0 +1,65 @@
+= Components
+
+== Hardware
+=== Router
+* connect networks and pass data between them using routing
+* operates at Layer 3 (Network) of the OSI model
+* routing is useful when devices are connected by many paths -> use optimal path (shortest, most reliable, faster medium like copper or fibre)
+
+=== Switch / Hub
+* device designed to aggregate multiple other devices using ethernet
+* from 4 to 64 ports for devices to plug into using Ethernet cable
+* switches keep track of what device is connected to which port -> much more efficient than a Hub which sends packet to every port
+* operate at both Layer 2 (Data link) and Layer 3 (Network), but they are exclusive -> Layer 2 switch or Layer 3 switch
+* allows network segregation with VLAN for security
+
+==== Layer 2 switch
+* forward frames (not packets as the IP protocol has been stripped) using MAC address
+
+==== Layer 3 switch
+* more sophisticated than Layer 2
+* can perform some responsibilities of a router like send frames to devices and route packets to other devices using the IP protocol
+
+=== MAC address
+* physical network interface of a device
+* unique address assigned at the factory it was built
+* twelve-character hexadecimal number
+** the first 6 characters represent the company that made it
+** the last 6 is a unique number
+* MAC address can be faked or "spoofed"
+
+=== Load Balancers
+* get request first then forward it to one of the multiple servers behind it
+* different algorithms: round-robin, weighted (least busy server)
+* performs health checks; stop sending traffic to unhealthy server
+
+=== Content Delivery Network
+* host static files (JavaScript, CSS, Images, Videos, ...) across thousands of servers all over the world
+* nearest server of client is chosen
+
+=== Web Application Firewall
+* sits between web request and web server
+* protect webserver from hacking or denial of service attack
+* analyses web requests for common attack techniques
+* has rate limiting to handle excessive amount of web requests from an IP per second
+* request is dropped if deemed a potential attack and never reaches the server
+
+=== Web Server
+* most common: Apache, Nginx, IIS, NodeJS
+* delivers files from root directory
+
+|===
+|Web Server |Root Directory
+
+|Nginx, Apache
+|/var/www/html
+
+|IIS
+|C:\inetpub\wwwroot
+
+|===
+
+==== Virtual Hosts
+Web servers can host multiple websites with different domain names using virtual hosts. The web server checks the hostname from the HTTP headers and matches that against its virtual hosts (text based configuration files). If no match, default website will be provided instead.
+
+Virtual hosts can have their root directory mapped to different locations on the hard drive (/var/www/website_one, /var/www/website_two, ...)

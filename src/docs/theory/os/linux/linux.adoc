@@ -1,0 +1,95 @@
+= Linux
+
+== Shell Operators
+|===
+|Symbol/Operator |Description
+
+|&
+|Run commands in the background of the terminal
+
+|&&
+|Combine multiple commands together in one line of the terminal.
+
+Right-hand command will only run if left-hand command is successful.
+
+|>
+|Output redirector. We can take output from a command and direct it elsewhere
+
+|>>
+|Appends to the output rather than replace it
+
+|===
+
+== Commands
+* -h is called a switch
+* --help is called a flag
+
+|===
+|Command |Full Name |Purpose |Good switch/flags
+
+|file
+|
+|Determine the type of a file
+|
+
+|su
+|switch user
+|
+|-l -> start a shell that is much more similar to the actual user logging into the system
+
+|===
+
+== Common Directories
+
+* /etc: configs, ...
+* /var: variable data, data frequently accessed, log files (/var/log)
+* /root: home for root user
+* /tmp: anyone can write here
+
+== Namespaces
+* OS uses namespaces to split resources available (CPU, RAM, priority) to processes
+* great for security -> isolate processes from a namespace from another namespace
+
+== Keyboard shortcuts / terminal actions
+
+|===
+|Shortcut |Description
+
+|Ctrl + Z (or &)
+|Send a process to the background
+
+|fg
+|Bring process from background to foreground
+
+|===
+
+== CRON
+[source, bash]
+----
+0 * 12 * * * cp -R /home/cmnatic/Documents /var/backups/
+----
+
+|===
+|Value |Description
+
+|MIN
+|What minute to execute at
+
+|HOUR
+|What hour to execute at
+
+|DOM
+|What day of the month to execute at
+
+|MON
+|What month of the year to execute at
+
+|DOW
+|What day of the week to execute at
+
+|CMD
+|The actual command that will be executed
+
+|===
+
+https://crontab-generator.org/[crontab-generator.org] or https://crontab.guru/[crontab.guru]

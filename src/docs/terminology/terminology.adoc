@@ -1,0 +1,205 @@
+= Terminology
+
+This table below highlights terminology and abbreviations.
+
+To sort: BGP, SMTP, IMAP, POP3, NTP, SNMP, RIP, SCTP, DCCP, RSVP, IGMP, OSPF, NDP
+
+== Protocol
+|===
+|Terminology |Description
+
+|FTP
+|File Transfer Protocol. Used by a file sharing application, client/server model, download files from a central location
+
+|SSH
+|Secure Shell. Used to securely login to systems via text-based interface
+
+|HTTP
+|HyperText Transfer Protocol. For World Wide Web
+
+|HTTPS
+|HyperText Transfer Protocol Secure. For secure World Wide Web
+
+|SMB
+|Server Message Block. Similar to FTP but can share devices like printers
+
+|RDP
+|Remote Desktop Protocol. Secure means of logging in to a system using a visual desktop interface (unlike SSH)
+
+|===
+
+== Network
+|===
+|Terminology |Description
+
+|ARP
+|Address resolution protocol
+
+|CDN
+|Content Delivery Network
+
+|CIDR
+|
+
+|DHCP
+|Dynamic Host Configuration Protocol
+
+|DNS
+|Domain Name System
+
+|DoS
+|Denial of Service
+
+|DDoS
+|Distributed Denial of Service
+
+|ICMP
+|Internet Control Message Protocol
+
+|IP
+|Internet protocol
+
+|IPSec
+|Internet Protocol Security
+
+|ISP
+|Internet service provider
+
+|LAN
+|Local area network
+
+|MAC address
+|Media Access Control address
+
+|NIC
+|Network Interface Card
+
+|OSI
+|Open Systems Interconnection Model
+
+|OSPF
+|Open Shortest Path First
+
+|PPP
+|Point-to-Point Protocol
+
+|PPTP
+|Point-to-Point Tunneling Protocol
+
+|RIP
+|Routing Information Protocol
+
+|Routing
+|Label given to the process of data travelling across networks
+
+|Spoofing
+|Network device pretends to identify as another using its MAC address
+
+|Subnetting
+|Split network into smaller networks within itself
+
+|TCP
+|Transmission Control Protocol
+
+|TLD
+|Top-Level Domain
+
+|UDP
+|User Datagram Protocol
+
+|URI
+|
+
+|URL
+|Uniform Resource Locator
+
+|VLAN
+|Virtual Local Area Network
+
+|VPN
+|Virtual Private Network
+
+|WAF
+|Web Application Firewall
+
+|===
+
+== Encryption
+|===
+|Terminology |Description
+
+|RSA
+|
+
+|===
+
+== Operating Systems
+
+|===
+| Terminology |OS |Description
+
+|ADS
+|Windows
+|Alternative Data Streams
+
+|(Mandatory) ASLR
+|Windows
+|Force randomization for images not compiled with /DYNAMICBASE
+
+|(Bottom-up) ASLR
+|Windows
+|Randomize memory locations for virtual memory allocations
+
+|CFG
+|Windows
+|Control flow guard: control flow integrity for indirect calls
+
+|DEP
+|Windows
+|Data Execution Prevention: prevents code from being run from data-only memory pages
+
+|FAT
+|Windows
+|File Allocation Table
+
+|HPFS
+|Windows
+|High Performance File System
+
+|NTFS
+|Windows
+|New Technology File System
+
+|TPM
+|Windows
+|Trusted Platform Module: hardware-based, security related functions -> cryptography on processor chip
+
+|UAC
+|Windows
+|User Account Control
+
+|VSS
+|Windows
+|Volume Shadow Copy Service: snapshot and point in time recovery
+
+|===
+
+== Web
+
+|===
+|Terminology |Description
+
+|HSTS
+|HTTP Strict Transport Security
+
+|===
+
+== Misc
+
+|===
+|Terminology |Description
+
+|RCE
+|Remote Code Execution
+
+|===

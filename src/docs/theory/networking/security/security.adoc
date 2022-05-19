@@ -1,0 +1,78 @@
+= Security
+
+== Firewall
+* device within a network responsible for determining what traffic is allowed to enter and exit
+* performs packet inspection -> Layer 3 (Network) and Layer 2 (Transport)
+* permit/deny access based on numerous factors
+** where the traffic is coming from
+** where the traffic is going to
+** what port is the traffic for
+** what protocol is the traffic using
+
+|===
+|Firewall Category |Description
+
+|Stateful
+|
+It uses entire information from a connection; rather than inspecting an individual packet.
+
+It uses lots of resources because the decision-making is dynamic (ex: allow first parts of a TCP handshake that would later fail).
+
+If a connection from a host is bad, it will block the entire device.
+
+
+|Stateless
+|
+It uses a static set of rules to determine whether individual packets are acceptable or not. A device sending a bad packet will not necessarily mean that the entire device is then blocked.
+
+It uses much fewer resources because they are much dumber. If a rule is not exactly matched, it is effectively useless.
+
+They are great when receiving large amounts of traffic from a set of hosts (DDoS)
+
+|===
+
+== VPN
+* creates dedicated path between 2 devices/networks -> tunnel
+* devices connected within a tunnel form their own private network
+* encrypted traffic in tunnel
+
+|===
+|Benefit |Description
+
+|It allows networks in different geographical locations to be connected
+|Business with multiple offices can have resources like servers/infra shared between offices using VPN
+
+|Privacy
+|Encryption used to protect data -> not vulnerable to sniffing. Useful in public WiFi
+
+|Anonymity
+|The level of anonymity a VPN provides is only as much as how other devices on the network respect privacy -> need VPN without logs on data, history, ...
+
+|===
+
+=== Technology
+
+|===
+|VPN Technology |Description
+
+|PPP
+|Used by PPTP to allow for authentication and provide encryption of data. Uses private key and public certificate (similar to SSH) which must match to connect.
+
+This technology is not capable of leaving a network by itself (non-routable).
+
+|PPTP
+|Technology that allows the data from PPP to travel and leaves a network.
+
+PPTP is easy to set up and is supported by most devices, but it is weakly encrypted in comparison to alternatives.
+
+|IPSec
+|Encrypts data using the Internet Protocol framework.
+
+Difficult to set up, however, if successful, it boasts strong encryption and is also supported on many devices.
+
+|===
+
+== VLAN
+* allows specific devices within a network to be virtually split up
+* rules in place determine how specific devices communicate with each other
+* network segregation at switch level

@@ -1,0 +1,207 @@
+= Networking
+
+== OSI Model
+* framework dictating how all networked devices will send, receive and interpret data
+* 7 layers
+* At every individual layer that data travels through, specific process take place, and pieces of information are added to this data -> encapsulation
+
+=== Layer 7 - Application
+Layer in which protocols and rules are in place to determine how the user should interact with data sent or received
+
+Examples:
+
+* GUI: email clients, browsers, file server browsing software
+* Protocols: DNS
+
+=== Layer 6 - Presentation
+Layer in which standardisation starts to take place => software can be built differently but data still needs to be handled in the same way; a translator for data to/from the application layer.
+
+Security features such as data encryption (HTTPS for example) and compression occur at this layer.
+
+=== Layer 5 - Session
+Layer 5 creates a connection to the other computer that the data is destined for. When a connection is established, a session is created for as long as the connection is active.
+
+The session layer synchronises the two computers to ensure that they are on the same page before data is sent and received. Data is then sent into smaller chunks of data (packets) which are sent one at a time.
+
+Sessions are unique -> data cannot travel over different sessions.
+
+=== Layer 4 - Transport
+When data is sent between devices, it follows one of two different protocols that are decided based upon several factors.
+
+==== TCP
+* reliable and guarantee
+* connection based -> need a connection between both a client and a device as a server before data is sent
+* constant connection between two devices for the amount of time it takes for the data to be sent and received
+* error checking to ensure all packets arrived in the same order
+* good for email, file sharing, ...
+
+|===
+|Advantages |Disadvantages
+
+|Data accuracy, guarantees the integrity of data
+|Requires a reliable connection between the two devices, need to send again missing chuck of data
+
+|Capable of sync two devices to prevent each other from being flooded with data in the wrong order
+|A slow connection can bottleneck another device as the connection will be reserved on the receiving computer the whole time
+
+|Performs a lot more processes for reliability
+|Significantly slower than UDP because more computing work has to be done on the other device the whole time
+
+|===
+
+==== UDP
+* no error checking and reliability
+* no sync between the two devices
+* useful with small pieces of data being sent (ARP, DHCP, video streaming)
+
+|===
+|Advantages |Disadvantages
+
+|Much faster than UDP
+|UDP doesn't care if the data is received
+
+|UDP leaves the application layer to decide if there is any control over how quickly packets are sent
+|quite flexible to software developers in this sense
+
+|UDP does not reserve a continuous connection on a device as TCP does
+|Unstable connections result in a terrible experience for the user
+
+|===
+
+=== Layer 3 - Network
+* routing: determine optimal path that the data should take to reach a device
+** OSPF & RIP
+* re-assembly of data takes place (small chunks to larger chunk)
+* everything is dealt with via IP addresses
+
+What path is the shortest, the most reliable, the fastest ?
+
+=== Layer 2 - Data link
+* physical addressing of the transmission
+* receives a packet from the network layer (including the IP address for the remote computer) and adds in the physical MAC address of the receiving endpoint
+* job of the data link layer to present the data in a format suitable for transmission
+* adds a piece on at the end of the transmission to verify that the data has not been corrupted on transmission -> increase security as well
+
+=== Layer 1 - Physical
+* devices use electrical signals to transfer data between each other in binary numbering system (ethernet cables, ...)
+
+=== Internet Protocol Suite
+
+|===
+2+^|OSI reference model |Internet protocol suite (TCP/IP) |Examples
+
+^.^|layer 7
+^.^|application layer (data)
+.3+^.^|application
+.3+^.^|HTTP, HTTPS, FTP, Telnet, BGP, DHCP, DNS, SMTP, IMAP, POP3, NTP, SNMP, SSH, RIP
+
+^.^|layer 6
+^.^|presentation layer (data)
+
+^.^|layer 5
+^.^|session layer (data)
+
+^.^|layer 4
+^.^|transport layer (segments for tcp, datagrams for udp)
+^.^|transport
+^.^|TCP, UDP, SCTP, DCCP, RSVP
+
+^.^|layer 3
+^.^|network layer (packets)
+^.^|internet
+^.^|IPv4, IPv6, ICMP, ICMPv6, IGMP, OSPF, IPSec
+
+^.^|layer 2
+^.^|data link layer (frames)
+.2+^.^|network interface
+.2+^.^|ARP, NDP, PPP, VLAN, Ethernet
+
+^.^|layer 1
+^.^|physical layer
+
+
+|===
+
+== Packets and frames
+* small pieces of data that, when forming together, make a larger piece of information or message
+* frame is at layer 2, meaning that there is no such information as IP addresses -> it is like an envelope within an envelope; first envelop is the packet that we mail and once opened, the envelope within still exists and contains data (frame)
+* when we are talking about anything IP addresses, we are talking about packets. When the encapsulating information is stripped away, we are talking about the frame itself
+
+=== Internet Protocol
+A packet using this protocol will have a set of headers such as
+
+|===
+|Header |Description
+
+|Time to Live
+|This field sets an expiry timer for the packet to not clog up the network if it never manages to reach the host or escape
+
+|Checksum
+|This field provides integrity checking for protocols such as TCP/IP -> corrupt if checksum does not match
+
+|Source Address
+|The IP address of the device that the packet is being sent *from* so that the data knows where to return to
+
+|Destination Address
+|The device's IP address the packet is being sent to so that data knows where to travel next
+
+|===
+
+== Network topology
+=== Star topology
+* devices are individually connected via a central network device (switch, hub)
+* most common -> reliable and scalable despite cost
+
+=== Bus topology
+* single connection known as backbone cable
+* slow and bottleneck since all the data travels along the same cable
+* one of the easier and more cost-efficient topologies to set up
+* single point of failure along the backbone cable
+* the data doesn't go directly to the destination but goes through all possible paths until it finds the destinationB
+
+=== Ring topology / Token topology
+* devices connected directly to each other to form a loop
+* little cabling required and less dependence on hardware such as within a star topology
+* data moves across the loop until it reaches the destined device
+* device sends its data first before forwarding other's data
+* less prone to bottleneck such as within a bus topology
+
+== Subnet
+* subnetting is splitting a network into smaller networks within itself
+* uses subnet mask (4 octets)
+* benefits: efficiency, security, full control
+
+|===
+|Type |Purpose |Explanation |Example
+
+|Network address
+|Identifies the start of the actual network
+|A device with IP 192.168.1.100 will be on the network 192.168.1.0
+|192.168.1.0
+
+|Host address
+|Identifies a device on the subnet
+|
+|192.168.1.100
+
+|Default gateway
+|Special address assigned to a device on the network that is capable of sending information to another network
+|Any data that needs to go to a device that isn't on the same network will be sent to this device. They can use any host address but usually use either the first or last host address in a network (.1 or .254)
+|192.168.1.254
+
+|===
+
+== Port
+* numerical value between 0 and 65535
+* some standards to follow like HTTP 80, HTTPS 443
+* port between 0 and 1024 is called a link:http://www.vmaxx.net/techinfo/ports.htm[common port]
+** FTP -> 21
+** SSH -> 22
+** HTTP -> 80
+** HTTPS -> 443
+** SMB -> 445
+** RDP -> 3389
+
+=== Port forwarding
+* without port forwarding, applications and services such as web servers are only available to devices within the same direct network
+* a router is used to configure port forwarding

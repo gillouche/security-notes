@@ -1,0 +1,11 @@
+= Operating Systems
+
+:leveloffset: +1
+
+include::linux/linux.adoc[]
+
+include::windows/windows.adoc[]
+
+include::mac/mac.adoc[]
+
+:leveloffset: -1

@@ -1,0 +1,456 @@
+= Protocols
+
+== IP
+=== IPv4
+* 4 octets (0-255)
+* unique on a same network
+* calculated through a technique known as IP addressing & subnetting
+* 2^32 IP addresses available (4.29 billion)
+
+=== IPv6
+* 8 octets
+* 2^128 IP addresses available (340 trillion-plus)
+* more efficient than IPv4 due to new methodologies
+
+== ICMP
+* ping uses ICMP packets to determine the performance of a connection between devices
+* measure done using ICMP's echo packet and then ICMP's echo reply
+
+== ARP
+* technology responsible for allowing devices to identify themselves on a network
+* allows a device to associate its MAC address with an IP address on the network
+* each device on a network will keep a log of the MAC addresses associated with other devices
+* broadcast to entire network
+
+|===
+|Category |Description
+
+|Request
+|message broadcast to find matching IP of a MAC address
+
+|Reply
+|response returned to initial device to acknowledge this
+
+|Entry
+|MAC-IP mapping stored in the device cache
+
+|Message
+|A combination of source MAC address, destination MAC address (FF - broadcast) and a message
+
+|===
+
+== DHCP
+* server that dynamically assigns IP address to a device
+* only when a device doesn't already have a manually assigned IP
+* IP is leased for some time
+
+|===
+|Packet category |Description
+
+|Discover
+|Request to see if any DHCP servers are on the network
+
+|Offer
+|Response from a DHCP server with an IP address that a new device could use
+
+|Request
+|Reply from device that accepted the offered IP address from the DHCP server
+
+|ACK
+|Reply from DHCP server that the client can now use this IP address
+
+|===
+
+== TCP/IP
+* consists of 4 layers: Application, Transport, Internet, Network Interface
+* similar to OSI model, information is added to each layer of the TCP model as the pieces of data (or packet) traverses it (encapsulation/decapsulation)
+
+=== Headers
+
+|===
+
+|Header |Description
+
+|Source Port
+|Port opened by the sender to send the TCP packet from, chosen randomly from 0-65535 (one not used at the time)
+
+|Destination Port
+|Port number that an app/service is running on the remote host, not chosen at random
+
+|Source IP
+|IP address of the device that is sending the packet
+
+|Destination IP
+|IP address of the device that the packet is destined for
+
+|Sequence Number
+|When a connection occurs, the first piece of data transmitted is given a random number. Both sides must agree on the same number sequence.
+
+|Acknowledgement Number
+|After a piece of data has been given a sequence number, the number of the next piece of data will have the sequence number + 1
+
+|Checksum
+|Used for TCP integrity check
+
+|Data
+|Bytes of a file that is being transmitted
+
+|Flag
+|Determines how the packet should be handled by either device during the handshake process
+
+|===
+
+=== Three-way handshake (SYN, SYN/ACK, ACK)
+
+|===
+
+|Step |Message |Description
+
+|1
+|SYN
+|Initial packet sent by a client during the handshake, used to initiate a connection and sync the two devices together
+
+|2
+|SYN/ACK
+|Sent by receiving device (server) to acknowledge the sync attempt from client
+
+|3
+|ACK
+|The acknowledgement packet can be used by either the client or server to acknowledge that a series of messages/packets have been successfully received
+
+|4
+|DATA
+|Once a connection has been established, data (such as bytes of a file) is sent via the DATA message
+
+|5
+|FIN
+|Used to properly close the connection after it has been complete
+
+|6
+|RST
+|This packet abruptly ends all communication, indicates some problem during the process (service/app problem, low resources, ...)
+
+|===
+
+=== TCP Closing a connection
+* TCP will close a connection once a device has determined that the other device has successfully received all the data
+* need to close TCP connections as soon as possible to free resources
+* Process
+** Step 1: device 1 sends FIN to device 2
+** Step 2: device 2 sends ACK and FIN to device 1
+** Step 3: device 1 sends ACK to device 2
+
+== UDP/IP
+* unlike TCP, UDP is stateless -> no constant connection between two devices
+* no Three-way handshake, no sync between the devices -> only request and response
+
+=== Headers
+
+|===
+
+|Header |Description
+
+|Time to live
+|This field sets an expiry timer for the packet, so it doesn't clog up the network if it never manages to reach a host or escape
+
+|Source Address
+|IP address of the device the packet is being sent from, so that data knows where to return to
+
+|Destination Address
+|IP address that the packet is being sent to so that data knows where to travel next
+
+|Source Port
+|Port opened by the sender to send the packet from, chosen randomly from a port between 0 and 65535 that isn't used at the time
+
+|Destination Port
+|Port of the app/service on the remote host, not chosen randomly
+
+|Data
+|bytes of the data
+
+
+|===
+
+== DNS
+* maps URL to public IP
+
+=== Domain Hierarchy
+* Root Domain -> "."
+* Top-Level Domains -> .edu, .com, .gov, .mil, ...
+* Second-Level domains -> mit, tryhackme, google, usa, nasa, army, ...
+
+==== TLD
+* most right-hand part of a domain name (.com, ...)
+* two types:
+** gTLD: Generic Top Level Domain (.com, ...)
+** ccTLD: Country Code Top Level Domain (.be, .co.uk, ...)
+
+==== Second-Level Domain
+* main part of a URL -> remove subdomain and TLD
+* limited to 63 characters + the TLD
+* can only use a-z 0-9 and hyphens
+* cannot start or end with hyphens or have consecutive hyphens
+
+==== Subdomain
+* left-hand side of the Second-Level Domain using a period to separate it -> admin.tryhackme.com; admin is the subdomain
+* same rule than Second-Level domain
+* can create multiple subdomains split with periods to create longer names
+* max length of domain name is 253 characters but no limit to the number of subdomains
+
+=== Record Types
+* DNS not only for website
+
+|===
+|Record |Description
+
+|A Record
+|These records resolve to IPv4 addresses, for example 104.26.10.229
+
+|AAAA Record
+|These records resolve to IPv6 addresses, for example 2606:4700:20::681a:be5
+
+|CNAME Record
+|These records resolve to another domain name. store.tryhackme.com returns a CNAME to shops.shopify.com which requires another DNS request to get the IP address
+
+|MX Record
+|These records resolve to the address of the servers that handle the email for the domain.
+
+Also come with a priority flag which tells the client in which order to try the servers (primary -> backup server in case of failure)
+
+|TXT Record
+|Free text fields whey any text-based data can be stored.
+
+Common uses: list servers that have the authority to send an email on behalf of the domain (battle against spam and spoofed email), verify ownership of the domain name when signing up for 3rd party services
+
+|===
+
+=== Request
+When we request a domain name:
+
+1. computer first check local cache. If cache miss -> request to Recursive DNS Server (provided by ISP usually but can choose our own like Cloudflare)
+2. Recursive DNS Server checks its cache. If cache miss -> request to internet's root DNS servers (DNS backbone of the internet)
+3. root DNS server's job is to redirect to the correct TLD server (.com to TLD that handles .com)
+4. Request arrives to authoritative server (also known as nameserver for the domain) and reply is sent to Recursive DNS server for caching
+5. Recursive DNS server sends to IP address to client
+
+Mapping is kept in cache for a number of seconds defined by TTL value
+
+== HTTP(S)
+* stateless
+
+=== URL
+http://user:password@tryhackme.com:80/view-room?id=1#task3
+
+|===
+|Field |Description |Example
+
+|Scheme
+|what protocol to use for accessing the resource
+|HTTP, HTTPS, FTP
+
+|User
+|Can use the credentials to login in the URL
+|user:password
+
+|Host/Domain
+|The domain or IP address of the server
+|tryhackme.com
+
+|Port
+|Port to connect to
+|80 for HTTP, 443 for HTTPS but can be any port between 1 and 65535
+
+|Path
+|The file name or location of the resource we are trying to access
+|view-room
+
+|Query String
+|Extra bits of information that can be sent to the requested path
+|?id=1
+
+|Fragment
+|Reference to a location on the actual page requested. Common for pages with long content
+|#task3
+
+|===
+
+=== Request
+* possible to make a request with just one line: GET / HTTP/1.1
+* need to send headers for richer web experience
+* HTTP requests always end with a blank line to inform the webserver that the request has finished
+
+[source,bash]
+-----
+GET / HTTP/1.1
+Host: tryhackme.com
+User-Agent: Mozilla/5.0 Firefox/87.0
+Referer: https://tryhackme.com/
+
+-----
+
+We use method GET to request home page "/" using HTTP protocol version 1.1. We also send a few headers
+
+* Host: server domain
+* User-Agent: browser information
+* Referer: which page sent us here
+
+=== Response
+* HTTP response contains a blank line to confirm the end of the HTTP response
+
+[source,bash]
+-----
+
+HTTP/1.1 200 OK
+Server: nginx/1.15.8
+Date: Fri, 09 Apr 2021 13:34:03 GMT
+Content-Type: text/html
+Content-Length: 98
+
+<html>
+<head>
+    <title>TryHackMe</title>
+</head>
+<body>
+    Welcome To TryHackMe.com
+</body>
+</html>
+-----
+
+* Server: info on the web server software and version number
+* Date: current date, time and timezone of the web server
+* Content-Type: what sort of info (HTML, JSON, images, videos, pdf, XML, ...)
+* Content-Length: how long the response is -> confirm no data is missing
+
+=== Methods
+* GET: get info from a web server, body is allowed but most likely ignored by web server
+* POST: submit data to the web server and potentially create new records
+* PUT: submit data to a web server to update information
+* DELETE: delete info from a web server
+
+=== Status Code
+Can be broken down into 5 different ranges
+
+|===
+|Range |Category |Description
+
+|100-199
+|Information Response
+|First part of the request has been accepted, and they should continue sending the rest of their request. No longer very commmon.
+
+|200-299
+|Success
+|Client request was successful
+
+|300-399
+|Redirection
+|Redirect client's request to another resource like a different webpage or a different website altogether
+
+|400-499
+|Client Errors
+|Inform client that there was an error with their request
+
+|500-599
+|Server Errors
+|Errors happened on the server-side and usually indicate quite a major problem with the server handling the request
+
+|===
+
+==== Common
+* 200 OK: request completed successfully
+* 201 Created: resource has been created
+* 301 Permanent Redirect: redirect to new webpage (client or search engine)
+* 302 Temporary Redirect: similar to 301 but temporary
+* 400 Bad Request: something wrong or missing in the request
+* 401 Not Authorized: not allowed to view this resource until authenticated
+* 403 Forbidden: not allowed to view this resource; logged in or not
+* 405 Method Not Allowed: the resource does not allow this method request
+* 404 Page Not Found: resource does not exist
+* 500 Internal Server Error: server side error not handled properly
+* 503 Service Unavailable: server overloaded or down for maintenance
+
+=== Headers
+* additional bits of data sent in the request
+* no header is strictly required
+
+|===
+|Header |Description
+
+|Host
+|Some web servers host multiple websites so by providing the host headers, we can tell it which one we require, otherwise we will just receive the default website for the server
+
+|User-Agent
+|Browser software and version number. Helps format the website properly for our browser because some elements of HTML, JavaScript and CSS are only available in certain browsers.
+
+|Content-Length
+|Helps server ensures that no data is missing
+
+|Accept-Encoding
+|Tells server what types of compression methods the browser supports so the data can be made smaller for transmitting over the internet
+
+|Cookie
+|Data sent to the server to help remember our information
+
+|Set-Cookie
+|Information to store which gets sent back to the web server on each request.
+
+Returned from the server.
+
+|Cache-Control
+|How long to store the content of the response in the browser's cache before it requests it again.
+
+Returned from the server.
+
+|Content-Type
+|What type of data is being returned (HTML, CSS, JavaScript, video, ...)
+
+Returned from the server.
+
+|Content-Encoding
+|What method has been used to compress the data to make it smaller when sending it over the internet.
+
+Returned from the server.
+
+|===
+
+=== Cookie
+* small piece of data stored on our computer
+* saved when we receive a "Set-Cookie" header from a web server
+* need to use cookie for state because HTTP is stateless
+* mostly used for website authentication (token, no password) but can serve many purposes
+* cookies have a name, a value, an expiry date and a path (what requests the cookie will be sent with)
+* when we log in, we normally get a Session Token which identifies us -> if stolen, we can maybe impersonate someone else
+
+Process
+
+1. Client request a page with a form for example
+2. Server sends data
+3. Client sends back form data (name=adam)
+4. Server responds with Set-Cookie: name=adam
+5. Client sends cookie in all further requests: Cookie: name=adam
+6. Server sees cookies data and take that into consideration
+
+==== Additional attributes
+
+|===
+|Attribute |Description |Required
+
+|Cookie Name
+|The Name of the Cookie to be set
+|Yes
+
+|Cookie Value
+|Value, this can be anything plaintext or encoded
+|Yes
+
+|Secure Only
+|If set, this cookie will only be set over HTTPS connections
+|No
+
+|Expiry
+|Set a timestamp where the cookie will be removed from the browser
+|No
+
+|Path
+|The cookie will only be sent if the specified URL is within the request
+|No
+|===

@@ -1,0 +1,6 @@
+= Encryption
+
+== Hashing
+One-way process that is used to transform data into a unique signature. The resulting output must be impossible to reverse.
+
+Frequently used to verify the integrity of files and documents -> even smallest change will result in the hashsum changing significantly; or password hashing to not store them in plain text.

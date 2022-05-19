@@ -1,0 +1,16 @@
+= Database
+
+== Structured Query Language (SQL)
+
+=== UNION
+Combine results of two or more SELECT statements from either single or multiple tables. UNION statements must retrieve the same number of columns in each SELECT statement, columns must be same data type and column order has to be the same.
+
+== SQLite
+Use flat files to store data.
+
+[source,bash]
+----
+sqlite3 example.db
+sqlite> .tables
+sqlite> PRAGMA table_info(customers);
+----

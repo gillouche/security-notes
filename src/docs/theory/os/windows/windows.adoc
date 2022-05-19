@@ -1,0 +1,72 @@
+= Windows
+
+== ADS
+File attribute for NTFS.
+
+Every Windows file has at least one data stream ($DATA), and ADS allows files to contains more than one stream of data.
+
+Windows Explorer doesn't display ADS to user, need to use Powershell.
+
+Can hide data with ADS (malware).
+
+== System32 folder
+Where Windows is installed. %windir% contains the system environment variable for the windows folder.
+
+== User accounts
+Standard User or Administrator. User profile folder is in C:\Users\xxx
+
+Can check in System Settings > Other users
+
+Manage user (run command): lusrmgr.msc
+
+== UAC
+Possible to turn off the UAC entirely
+
+== Task Scheduler
+A task can run an application, a script, etc., and tasks can be configured to run at any point. A task can run at log in or at log off. Tasks can also be configured to run on a specific schedule, for example, every five minutes.
+
+== Event Viewer
+Audit trail of the actions (error, warnings, success/failure audit, ...) on the system
+
+== Encryption
+BitLocker is the feature for drive encryption
+
+== Point-in-time copy
+With Volume Shadow Copy Service, we can create snapshot of Windows
+
+== Security
+Windows has built-in tools for security
+
+* Virus & threat protection: anti-virus, ransomware protection, real time protection
+
+* Firewall & network protection
+** Domain: networks where host system can authenticate to a domain controller
+** Private: private/home network
+** Public: public networks such as Wi-Fi hotspots, airports, ...
+
+* App & browser control: protection against phishing or malware websites and applications + download malicious files
+
+* Device security: core isolation, memory integrity, security processor
+
+== Command prompt
+Help menu is /? after the command
+
+|===
+|Command |Description
+
+|hostname
+|
+
+|ipconfig
+|
+
+|net
+|Manage network resources
+
+|netstat
+|Show TCP/IP network connections
+
+|whoami
+|
+
+|===

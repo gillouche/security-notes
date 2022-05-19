@@ -1,0 +1,107 @@
+= Websites
+
+== JavaScript
+JavaScript in HTML can be loaded within <script> tags but also included remotely with the src attribute
+
+[source,html]
+----
+<script src="/location/of/javascript_file.js"></script>
+----
+
+JavaScript can also be directly on a HTML element with onclick, on hover, ...
+
+[source,html]
+----
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TryHackMe Editor</title>
+    </head>
+    <body>
+        <div id="demo">Hi there!</div>
+        <script type="text/javascript">
+            document.getElementById("demo").innerHTML = "Hack the Planet";
+        </script>
+        <button onclick='document.getElementById("demo").innerHTML = "Button Clicked";'>
+            Click Me!
+        </button>
+    </body>
+</html>
+----
+
+== PHP
+
+The PHP $_REQUEST variable is an array that contains data received from the query string and POST data. If the same key name is used for both the query string and POST data, the application logic for this variable favours POST data fields rather than the query string.
+
+Three equals signs (===) -> exact match on the string, including the same letter casing. This will not match /adMin (logic flaw possible).
+
+== JSON Web Token
+* common method for authorization
+* Kind of a cookie that is generated using HMAC hashing or public/private keys
+* JSON format after decoding
+* JWT can be divided into 3 parts separated by a dot, base64 encoded
+
+|===
+|Part |Description |Example
+
+|Header
+|Algorithm used and the type of token. Alg could be HMAC, RSA, SHA256 or even None. RS256 is the server private key, HS256 is the server's public key.
+|{  "alg": "HS256", "typ": "JWT"}
+
+|Payload
+|Contains the access given to the certain user. This can vary from website to website, some can just have a simple username and some ID and others could have a lot of other details.
+|
+
+|Signature
+|Ensure that the integrity of the data was maintained while transferring it from a user's computer to the server and back. Encrypted with whatever alg that was passed in the header's value. Can only be decrypted with a predefined secret
+|
+
+|===
+
+Example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+=== Links
+
+https://jwt.io/#debugger-io[JWT debugger]
+
+== XML (eXtensible Markup Language)
+Data can be changed at any point in time without affecting the data presentation.
+
+XML allows validation using DTD and Schema -> ensures XML free from any syntax error
+
+XML is case sensitive
+
+=== XML prolog
+Specifies the XML version and the encoding used.
+
+[source, xml]
+-----
+<?xml version="1.0" encoding="UTF-8"?>
+-----
+
+=== ROOT element
+Every XML document must contain a ROOT element
+
+[source, xml]
+-----
+<?xml version="1.0" encoding="UTF-8"?>
+<mail>
+    <to>falcon</to>
+    <from>feast</from>
+    <subject>About XXE</subject>
+    <text category = "message">You need to learn about XXE</text>
+</mail>
+-----
+
+=== DTD (Document Type Definition)
+Defines the structure and the legal elements and attributes of an XML document. Extension is .dtd
+
+[source, xml]
+-----
+<!DOCTYPE note [ <!ELEMENT note (to,from,heading,body)> <!ELEMENT to (#PCDATA)> <!ELEMENT from (#PCDATA)> <!ELEMENT heading (#PCDATA)> <!ELEMENT body (#PCDATA)> ]>
+-----
+
+* !DOCTYPE note - defines a root element of the document named note
+* !ELEMENT note - defines that the note element must contain the elements "to, from, heading, body"
+* !ELEMENT to,from,heading,body must be element of type #PCDATA which means parseable character data
+* !ENTITY define shortcuts to special characters

