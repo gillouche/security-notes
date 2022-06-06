@@ -71,6 +71,9 @@ To sort: BGP, SMTP, IMAP, POP3, NTP, SNMP, RIP, SCTP, DCCP, RSVP, IGMP, OSPF, ND
 |MAC address
 |Media Access Control address
 
+|NetBIOS
+|Network Basic Input Output System
+
 |NIC
 |Network Interface Card
 
@@ -124,12 +127,18 @@ To sort: BGP, SMTP, IMAP, POP3, NTP, SNMP, RIP, SCTP, DCCP, RSVP, IGMP, OSPF, ND
 
 |===
 
-== Encryption
+== Encryption/Hashing
 |===
 |Terminology |Description
 
+|NTLM
+|New Technology Lan Manager
+
+|PGP
+|Pretty good privacy
+
 |RSA
-|
+|Rivest-Shamir-Adleman algorithm
 
 |===
 
@@ -192,6 +201,9 @@ To sort: BGP, SMTP, IMAP, POP3, NTP, SNMP, RIP, SCTP, DCCP, RSVP, IGMP, OSPF, ND
 |HSTS
 |HTTP Strict Transport Security
 
+|IDOR
+|Insecure Direct Object References
+
 |===
 
 == Misc
@@ -199,7 +211,43 @@ To sort: BGP, SMTP, IMAP, POP3, NTP, SNMP, RIP, SCTP, DCCP, RSVP, IGMP, OSPF, ND
 |===
 |Terminology |Description
 
+|DFIR
+|Digital Forensics and Incident Response
+
+|IDS
+|Intrusion detection system. Detects attempts to break into a network.
+
+|IPS
+|Intrusion Prevention System. Prevents attackers from breaking into a network.
+
+|NOC
+|Network Operations Center
+
+|NSM
+|Network security monitoring
+
+|Ransomware
+|Malware that encrypts user's files.
+
 |RCE
 |Remote Code Execution
+
+|Reverse Shell
+|Program which can be used to gain code/command execution on a device.
+
+|Rootkit
+|
+
+|SIEM
+|Security Information and Event Management system. Aggregates multiple sources and display one dashboard with security info.
+
+|SOC
+|Security Operations Center
+
+|Trojan Horse
+|Program that shows one desirable function but hides a malicious function underneath.
+
+|Virus
+|Piece of code that attaches itself to a program. Goal is to spread.
 
 |===

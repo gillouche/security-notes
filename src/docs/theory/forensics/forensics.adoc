@@ -1,0 +1,33 @@
+= Forensics
+
+== Metadata
+
+Basic information such as:
+
+* file creation date
+* last modification date
+
+Tools can extract more information.
+
+=== PDF
+Use pdfinfo to get more metadata on the file.
+
+=== Images
+Exchangeable Image File Format (EXIF) is a standard for saving metadata to image files.
+
+* camera model/smartphone model
+* date and time of image capture
+* photo settings (focal length, aperture, shutter speed, ISO settings)
+* GPS info
+
+Use exiftool to extract info.
+
+=== Text
+
+== Logging
+
+* server logs
+* DNS logs
+* firewall logs
+* DHCP logs
+* database logs

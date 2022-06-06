@@ -1,0 +1,21 @@
+= Websites
+
+== ExploitDB
+https://www.exploit-db.com/
+
+Look for exploit for a given version of an application.
+
+== NVD (National Vulnerability Database)
+https://nvd.nist.gov/vuln/search
+
+Search product name, vendor name, CVE name (CVE-YEAR-IDNUMBER), ...
+
+== CVE Mitre
+https://cve.mitre.org/
+
+Identify, define, and catalog publicly disclosed cybersecurity vulnerabilities
+
+== Crackstation
+https://crackstation.net/
+
+Look for cracked passwords via their hash.

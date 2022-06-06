@@ -454,3 +454,126 @@ Process
 |The cookie will only be sent if the specified URL is within the request
 |No
 |===
+
+== SMB
+
+Server Message Block Protocol, response-request type protocol, default port 445 (after windows 2000), 139 (netbios port).
+
+Client-server communication protocol used for sharing access to files, printers, serial ports and other resources on a network. Clients connect to servers using TCP/IP (actually NetBIOS over TCP/IP as specified in RFC1001 and RFC1002), NetBEUI or IPX/SPX.
+
+Supported by Microsoft Windows and Samba.
+
+Port 111 is running the service rpcbind. This is just a server that converts remote procedure call (RPC) program number into universal addresses. When an RPC service is started, it tells rpcbind the address at which it is listening and the RPC program number its prepared to serve.
+
+=== Enumeration
+First step is port scanning using tools like enum4linux.
+
+=== Exploitation
+While there are vulnerabilities that can allow RCE, we are more likely to encounter a situation where the best way is due to misconfigurations in the system (anonymous access).
+
+[source,bash]
+----
+smbclient //10.10.70.141/profiles -U Anonymous
+----
+
+=== Commands
+* smbclient //ip/anonymous connect as anonymous
+* smbget -R smb://ip/anonymous download recursively
+
+
+== Telnet
+Application protocol client-server to execute commands on a remote server with telnet, insecure because traffic is in clear text.
+
+[source, bash]
+----
+telnet <ip> <port>
+----
+
+CVE exist but most likely a bad configuration will allow us to exploit it.
+
+=== Commands
+
+|===
+|Command |Description
+
+|.HELP
+|
+
+|.RUN <command>
+|Run the command
+
+|===
+
+== FTP
+Client-server model tro transfer files over the network. Not encrypted so a MitM attack could reveal secrets using ARP poisoning.
+
+Two channels:
+
+* command/control channel
+* data channel
+
+Client request session, server validates credentials and while the session is open, the client may execute FTP commands on the server.
+
+Server can be active, passive connection or both.
+
+* Active: client opens port and listens, server actively connect to it
+* Passive: server opens port and listens passively and the client connects to it
+
+=== Good to know
+Some vulnerable versions of in.ftpd and some other FTP server variants return different responses to the "cwd" command for home directories which exist and those who don't.
+
+This can be exploited because we can issue cwd commands before authentication => get names of valid user accounts.
+
+https://www.exploit-db.com/exploits/20745
+
+== NFS
+Network File System for a system to share directories and files with others over a network. The portion of the file system that is mounted can be accessed by clients with whatever privileges are assigned to each file.
+
+Client requests to mount a directory from the remote host on a local directory. Server checks permission to mount and return a file handle which uniquely identifies each file and directory that is on the server.
+
+If someone wants to access a file using NFS, an RPC call is placed to NFSD (the NFS daemon) on the server. This call takes parameters such as:
+
+* The file handle
+* The name of the file to be accessed
+* The user's, user ID
+* The user's group ID
+
+The mount service connect to the relevant mount daemon using RPC.
+
+=== Enumerate
+Find available folders to mount
+[source,bash]
+----
+/usr/bin/showmount -e 10.10.235.240
+----
+
+=== root_squash
+By default on NFS shares, root squashing is enabled and prevents anyone connecting to the NFS share from having root access to the NFS volume.
+
+Remote root users are assigned a user "nfsnobody" when connected.
+
+If this is turned off, it can allow the creation of SUID bit files allowing a remote user root access to the connected system.
+
+First mount the NFS then copy a file like a shell (https://github.com/polo-sec/writing/blob/master/Security%20Challenge%20Walkthroughs/Networks%202/bash[example]) on the NFS. Update the permissions with chmod +s, ssh on the server with the unprivileged user and execute the script with the SUID flag to get root.
+
+== SMTP
+Simple Mail Transfer Protocol to send emails with POP/IMAP. Port is usually 25.
+
+SMTP server performs 3 basic functions:
+
+* verifies who is sending emails through the SMTP server
+* sends outgoing email
+* if outgoing email can't be delivered, it sends the message back to the sender
+
+POP (post office protocol - simple, download inbox from mail server) and IMAP (internet message access protocol, sync the current inbox with new mail on the server) are both email protocols who are responsible for the transfer of email between a client and a mail server.
+
+User -> SMTP server (SMTP handshake) -> internet -> POP/IMAP server -> recipient
+
+=== Commands
+
+* VRFY: confirm the names of valid users
+* EXPN: reveals the actual address of user's aliases and lises of email (mailing list)
+
+Metasploit can do this automatically via "smtp_enum" or manually via telnet.
+
+== MySQL

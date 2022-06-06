@@ -1,0 +1,42 @@
+= General
+
+== Process
+
+=== Recon (reconnaissance)
+Try to learn as much as possible about the target (server type, OS, IP address, names, email, ...), ports scanning
+
+It's important to ensure we are always doing our reconnaissance thoroughly before progressing. Knowing all open services (which can all be points of exploitation) is very important, don't forget that ports on a higher range might be open so always scan ports after 1000 (even if you leave scanning in the background)
+
+Tools:
+
+* nmap with -sV -A -sC -O, find open port with nmap ip -vvv
+* enum shares with nmap if samba is there (smb-enum-shares.nse, smb-enum-users.nse)
+* gobuster for webapp
+* wappalyzer on the website to find the tools used to build it
+* enum4linux can scan local computer but also remote with -a
+
+=== Weaponisation
+prepare a file with a malicious component
+
+* https://github.com/pentestmonkey/php-reverse-shell/blob/master/php-reverse-shell.php[Github - pentestmonkey - php reverse shell]
+* msfvenom to generate payload
+
+=== Delivery
+send file to target via any feasible method
+
+* copy file via SSH in /dev/shm
+
+=== Exploitation
+file opened or executed
+
+* hydra for bruteforce (ssh, ...)
+* msfconsole
+
+=== Installation
+install malware on the system
+
+=== Command and Control
+system can now execute commands from attacker
+
+=== Actions on objectives
+data stolen, ...

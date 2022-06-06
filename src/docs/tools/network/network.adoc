@@ -1,0 +1,12 @@
+= Network
+
+== Nessus
+GUI Vulnerability scanner (similar to nmap) that doesn't make assumptions when scanning (web app on port 80, ...).
+
+== Wireshark / tshark
+Network Packet sniffer
+
+== Enum4linux
+Enumerate SMB (Windows and Samba)
+
+We can also do that with nmap scripts.

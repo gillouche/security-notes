@@ -1,0 +1,286 @@
+= Active Directory
+
+Active directory network: collections of PC, servers inside of domains which are collectively part of other domains
+
+Active directory allows a company to control and monitor the user's computers. One account per user, can sign in on any computer and have access to its files on the server as well as the local storage.
+
+Invalid TLD commonly used for AD Domain: .local
+
+== Components
+
+=== Domain Controllers
+Windows server that has Active Directory Domain Services (ADDS) installed and has been promoted to a domain controller in the forest. Domain controllers are the center of Active Directory because they control the rest of the domain.
+
+* holds the AD DS data store
+* handles authentication and authorization services
+* replicate updates from other domain controllers in the forest
+* allow addmin access to manage domain resources
+
+==== AD DS Data Store
+Holds database and processes needed to store and manage directory information such as users, groups and services.
+
+* contains the NTDS.dit: database that contains all the info of an Active Directory domain controller as well as password hashes for domain users
+* stored by default in %SystemRoot%\NTDS
+* accessible only by the domain controller
+
+=== Forests, Trees, Domains
+Forest: container that holds all the other bits and pieces of the network together. Without the forest, all the other trees and domains would not be able to interact.
+
+A forest is a collection of one or more domain trees inside of an Active Directory network.
+
+* Trees: a hierarchy of domains in Active Directory Domain Services
+* Domains: used to group and manage objects
+* Organizational Units (OUs): containers for groups, computers, users, printers and other OUs
+* Trusts: allow users to access resources in other domains
+* Objects: users, groups, printers, computers, shares
+* Domain services: DNS server, LLMNR, IPv6
+* Domain Schema: rules for object creation
+
+=== Users + Groups
+When we create a domain controller, it comes with default groups and two default users (Administrator and guest).
+
+==== Users
+
+* Domain admins: big boss, control domains and only one who can access the domain controller
+* Service accounts: shouldn't be used except for service maintenance. Required by Windows for service such as SQL to pair a service with a service account
+* Local admins: can make change to local machines as an admin, can control normal users but cannot access the domain controller
+* Domain users: everyday users, can log in on the machines and may have local admin rights
+
+==== Groups
+* Security groups: used to specify permissions for a large number of users
+* Distribution groups: used to specify email distribution lists (less beneficial except for enumeration)
+
+|===
+|Security Group |Description
+
+|Domain Controllers
+|All domain controllers in the domain
+
+|Domain Guests
+|All domain guests
+
+|Domain Users
+|All domain users
+
+|Domain Computers
+|All workstations and servers joined to the domain
+
+|Domain Admins
+|Designated administrators of the domain
+
+|Enterprise Admins
+|Designated administrators of the enterprise
+
+|Schema Admins
+|Designated administrators of the schema
+
+|DNS Admins
+|DNS Administrators Group
+
+|DNS Update Proxy
+|DNS clients who are permitted to perform dynamic updates on behalf of some other clients (such as DHCP servers).
+
+|Allowed RODC Password Replication Group
+|Members in this group can have their passwords replicated to all read-only domain controllers in the domain
+
+|Group Policy Creator Owners
+|Members in this group can modify group policy for the domain
+
+|Denied RODC Password Replication Group
+|Members in this group cannot have their passwords replicated to any read-only domain controllers in the domain
+
+|Protected Users
+|Members of this group are afforded additional protections against authentication security threats. See http://go.microsoft.com/fwlink/?LinkId=298939 for more information.
+
+|Cert Publishers
+|Members of this group are permitted to publish certificates to the directory
+
+|Read-Only Domain Controllers
+|Members of this group are Read-Only Domain Controllers in the domain
+
+|Enterprise Read-Only Domain Controllers
+|Members of this group are Read-Only Domain Controllers in the enterprise
+
+|Key Admins
+|Members of this group can perform administrative actions on key objects within the domain.
+
+|Enterprise Key Admins
+|Members of this group can perform administrative actions on key objects within the forest.
+
+|Cloneable Domain Controllers
+|Members of this group that are domain controllers may be cloned.
+
+|RAS and IAS Servers
+|Servers in this group can access remote access properties of users
+
+|===
+
+=== Trusts and Policies
+Trusts and policies go hand in hand to help the domain and trees communicate with each other and maintain "security" inside the network. They put the rules in place of how the domains inside a forest can interact with each other, how an external forest can interact with the forest, and the overall domain rules or policies that a domain must follow.
+
+Trusts are a mechanism in place for users in the network to gain access to other resources in the domain.
+
+Two types:
+
+* Directional: from a trusting domain to a trusted domain
+* Transitive: trust relationship expands beyond just two domains to include other trusted domains
+
+We can sometimes abuse these trusts in order to move laterally throughout the network.
+
+Policies dictate how the server operates and what rules it will and will not follow. Policies apply to a domain as a whole. For example, if we wanted to disable windows defender across all machines on the domain, we could create a new group policy object to disable it.
+
+=== Domain Services
+Services that the domain controller provides to the rest of the domain or tree.
+
+Default domain services:
+
+* LDAP (lightweight directory access protocol): provides communication between applications and directory services
+* Certificate services: allow the domain controller to create, validate and revoke public key certificates
+* DNS, LLMNR, NBT-NS: domain name services for identifying IP hostnames
+
+=== Authentication
+Most important but also most vulnerable part of AD is the authentication protocols set in place. NTLM and Kerberos are the two main types.
+
+==== Kerberos
+Default authentication service for AD that uses ticket-granting tickets and service tickets to authenticate users and give users access to other resources across the domain. More secure than NTLM, stronger encryption.
+
+|===
+|Term |Description
+
+|Ticket Granting Ticket (TGT)
+|Authentication ticket used to request service tickets from the TGS for specific resources from the domain
+
+|Key Distribution Center (KDC)
+|Service for issuing TGT and service tickets that consist of the Authentication Service and the Ticket Granting Service. KDC = AS + TGS
+
+|Authentication Service (AS)
+|Issues TGT to be used by the TGS in the domain to request access to other machines and service tickets
+
+|Ticket Granting Service (TGS)
+|Take TGT and returns a ticket to a machine on the domain
+
+|Service Principal Name (SPN)
+|Identifier given to the service instance to associate a service instance with a domain service account. Windows requires that services have a domain service account.
+
+|KDC Long Term Secret Key (KDC LT Key)
+|KDC key is based on the KRBTGT service account; used to encrypt the TGT and sign the PAC
+
+|Client Long Term Secret Key (Client LT key)
+|Based on the computer or service account; used to check the encrypted timestamp and encrypt the session key
+
+|Service Long Term Secret Key (Service LT key)
+|Key is based on the service account; used to encrypt the service portion of the service ticket and sign the PAC.
+
+|Session Key
+|Issued by the KDC when a TGT is issued. The user will provide the session key to the KDC along with the TGT when requesting a service ticket
+
+|Privilege Attribute Certificate (PAC)
+|Holds all the user's relevant information. It is sent along with the TGT to the KDC to be signed by the Target LT key and the KDC LT key in order to validate the user
+
+|===
+
+===== AS-REQ with Pre-Authentication in detail
+AS-REQ step in Kerberos authentication starts when a user requests a TGT from the KDC. To validate the user and create a TGT for the user, the KDC must:
+
+* user must encrypt a timestamp NT hash and send it to AS
+* KDC attempts to decrypt the timestamp using the NT hash from the user
+* if successful, the KDC issues a TGT and a session key for the user
+
+By brute-forcing Kerberos pre-authentication, we don't trigger the account failed to log on event. We can brute-force by only sending a single UDP frame to the KDC allowing us to enumerate the users on the domain from a wordlist.
+
+===== TGT contents
+* encrypted using KDC LT key
+* signed with service LT key and KDC LT key
+* contents:
+** start/end/max renew date
+** service name (krbtgt; example.local)
+** target name (krbtgt; example.local)
+** client name (user; example.local)
+** flags (ooeooooo)
+** session key (00x000000 12eb212...)
+** privilege attribute certificate (username, SID, ...)
+
+===== Service ticket contents
+Contains two portions: the service provided portion and the user provided portion. Signed with service LT key and KDC LT key.
+
+* service portion: user details, session key, encrypts the ticket with the service account NTLM hash
+* user portion: validity timestamp, session key, encrypts with the TGT session key
+
+===== Kerberos Authentication Overview
+. AS-REQ: client request Authentication Ticket or TGT
+. AS-REP: KDC verifies the client and sends back an encrypted TGT
+. TGS-REQ: client sends encrypted TGT to TGS with the SPN of the service the client wants to access
+. TGS-REP: KDC verifies TGT of the user and that the user as access to the service, then sends a valid session key for the service to the client
+. AP-REQ: client requests the service and sends the valid session key to prove that the user has access
+. AP-REP: the service grants access
+
+===== Tickets overview
+* main tickets we see are .kirbi (Rubeus) and .ccache (Impacket)
+* ticket is base64 encoded
+* TGT only used with the KDC to get service tickets
+* TGT only work with that given service account; KRBTGT allows us to get any service ticket that we want
+
+===== Attack privilege requirements
+* kerbrute enumeration: no domain access required
+* pass the ticket: access as a user to the domain required
+* kerberoasting: access as any user required
+* AS-REP roasting: access as any user required
+* Golden Ticket: full domain compromise (domain admin) required
+* Silver Ticket: service hash required
+* Skeleton Key: full domain compromise (domain admin required)
+
+==== NTLM
+Default Windows authentication protocol uses an encrypted challenge/response protocol
+
+== Azure AD
+Azure acts as the middle man between our physical AD and users' sign on -> more secure transactions between domains
+
+|===
+|Windows Server AD |Azure AD
+
+|LDAP
+|Rest APIs
+
+|NTLM
+|OAuth/SAML
+
+|Kerberos
+|OpenID
+
+|OU Tree
+|Flat Structure
+
+|Domains and Forests
+|Tenants
+
+|Trusts
+|Guests
+
+|===
+
+
+== Service Account
+If the service account is a domain admin, we have control similar to that of a golden/silver ticket. With that, we can dump NTDS.dit
+
+If it is not, we can use it to log into other systems and pivot or escalade. We can also use that cracked password to spray against other service and domain admin accounts (in case of password reuse).
+
+== KRBTGT
+A KRBTGT is the service account for the KDC (Key Distribution Center) that issues all of the tickets to the clients. If we impersonate this account and create a golden ticket from the KRBTGT, we give ourselves the ability to create a service ticket for anything we want. A TGT ticket to a service account issued by the KDC and can only access that service the TGT is from like the SQLService ticket.
+
+== Golden/Silver ticket
+A golden ticket attack works by dumping the TGT of any user on the domain. This would preferably be a domain admin however for a golden ticket, we would dump the krbtgt ticket and for a silver ticket, we would dump any service or domain admin ticket.
+
+This provides us with the service/domain admin account's SID (security identifier) that is a unique identifier for each user account as well as the NTLM hash. We then use these details inside of a mimikatz golden ticket attack in order to create a TGT that impersonates the given service account information.
+
+== Mitigation
+
+=== Kerberoasting
+* String service passwords
+* Don't make a service account domain admin because it never needs to
+
+=== AS-REP
+* strong password policy to take longer to crack the hashes
+* don't turn off Kerberos Pre-Authentication unless it's necessary. There's almost no other way to completely mitigate this attack other than keeping Pre-Authentication on.
+
+=== Pass the ticket
+* don't let domain admins log onto anything except the domain controller. If they do, we can get the tickets and move laterally

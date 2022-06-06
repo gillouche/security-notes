@@ -6,6 +6,8 @@ include::linux/linux.adoc[]
 
 include::windows/windows.adoc[]
 
+include::windows/activedirectory.adoc[]
+
 include::mac/mac.adoc[]
 
 :leveloffset: -1

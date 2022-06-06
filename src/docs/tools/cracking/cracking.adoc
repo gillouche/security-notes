@@ -1,0 +1,80 @@
+= Cracking
+
+== RSA encryption
+https://github.com/Ganapati/RsaCtfTool and https://github.com/ius/rsatool
+
+Can be useful for CTF.
+
+== Mimikatz
+Get NTLM hashes of windows passwords.
+
+== Hashcat
+Compute hash from wordlist and compare with hash to be found.
+
+hashcat -m <hash id> -a 0 -o <output file> <hash> <wordlist>
+
+https://hashcat.net/wiki/doku.php?id=example_hashes
+
+== John the ripper
+John has built-in features to detect what type of hash it's being given but it is not always the best idea because it can be unreliable.
+
+[source, bash]
+----
+john --format=[format] --wordlist=[path to wordlist] [path to file]
+john --list=formats
+john --list=formats | grep -iF "md5"
+----
+
+For Windows hash, use "NT" for the format (NTLM).
+
+For Linux, we need /etc/passwd, /etc/shadow and John's tool "unshadow". Use sha512crypt
+
+=== Single Crack mode
+Create possible values from an input. If the input is Markus, John will try Markus1, Markus2, ... MArkus, MARkus, ... Markus!, Markus*...
+
+This technique is called word mangling. We can specify rules called mangling rules.
+
+Compatible with Gecos fields of unix-like OS which are terms between ":" in /etc/shadow & /etc/passwd. This gives context to John to build a list of word to try.
+
+If we know more information about the password structure of our target, we can create our own custom rules (password must have at least 1 capital letter, number, symbol, ...). Users will most likely follow a pattern for all their passwords like starts with capital letter, ends with a number and a symbol with their password in the middle.
+
+Rules are stored in /etc/john/john.conf, see https://www.openwall.com/john/doc/RULES.shtml[rules doc]
+
+Once created, we reference our rule "--rule=our_rule"
+
+==== Tools
+* Use zip2john/rar2john tool from John to get the hash of the password.
+* We can use the private key as an authentication key to login to a remote machine that will require a password. Use ssh2john
+* Use gpg2john
+* jwt2john
+* ...
+
+== Hydra
+Online password cracking tool, rapid dictionary attacks against more than 50 protocols (Telnet, RDP, SSH, FTP, HTTP, HTTPS, SMB, several databases, ...).
+
+[source,bash]
+----
+hydra -t 4 -l dale -P /usr/share/wordlists/rockyou.txt -vV 10.10.10.6 ftp
+----
+
+|===
+|Argument |Description
+
+|-t 4
+|Number of parallel connections per target
+
+|-l [user]
+|Points to the user whose account we're trying to compromise
+
+|-P [path to dictionary]
+|Points to the file containing the list of possible passwords
+
+|-vV
+|Sets verbose mode to very verbose, shows the login+pass combination for each attempt
+
+|===
+
+=== Examples
+* ftp: hydra -l user -P passlist.txt ftp://MACHINE_IP
+* ssh: hydra -l <username> -P <full path to pass> MACHINE_IP -t 4 ssh
+* POST web form: hydra -l <username> -P <wordlist> 10.10.24.136 http-post-form "/:username=^USER^&password=^PASS^:F=incorrect" -V

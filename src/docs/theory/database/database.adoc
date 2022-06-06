@@ -1,5 +1,11 @@
 = Database
 
+== Schemas
+In MySQL, the schema is a synonym of database. For others, there is a distinction. For Oracle, the schema represents only a part of a database: the tables and other objects owned by a single user
+
+== Hashes
+Used for indexes -> turn a variable length input into a fixed length output
+
 == Structured Query Language (SQL)
 
 === UNION

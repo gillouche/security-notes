@@ -2,6 +2,8 @@
 
 :leveloffset: +1
 
+include::general/process.adoc[]
+
 include::website/website.adoc[]
 
 include::website/process.adoc[]
@@ -13,5 +15,7 @@ include::database/process.adoc[]
 include::os/os.adoc[]
 
 include::os/process.adoc[]
+
+include::ad/process.adoc[]
 
 :leveloffset: -1

@@ -1,6 +1,6 @@
 = Security
+
 include::templates/document-configuration.adoc[]
-:imagesdir: ./images
 
 :leveloffset: +1
 
@@ -8,8 +8,8 @@ include::terminology/terminology.adoc[]
 
 include::theory/theory.adoc[]
 
-include::attacks/attacks.adoc[]
-
 include::tools/tools.adoc[]
+
+include::attacks/attacks.adoc[]
 
 :leveloffset: -1

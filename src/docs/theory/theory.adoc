@@ -16,4 +16,8 @@ include::vulnerability/vulnerability.adoc[]
 
 include::owasp/owasp.adoc[]
 
+include::forensics/forensics.adoc[]
+
+include::roles/roles.adoc[]
+
 :leveloffset: -1

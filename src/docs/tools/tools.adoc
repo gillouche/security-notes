@@ -1,248 +1,25 @@
 = Tools
 
-== Linux
+:leveloffset: +1
 
+include::native/os.adoc[]
 
-=== Tools
+include::native/shell.adoc[]
 
-==== sudo
-|===
-|Argument |Description
+include::native/privesc.adoc[]
 
-|-l
-|List the allowed/forbidden commands for the invoking user
+include::automation/automation.adoc[]
 
-|===
+include::cracking/cracking.adoc[]
 
-=== Monitoring
-==== fail2ban
-Monitor attempted brute forces
+include::network/network.adoc[]
 
-=== Networking
+include::web/web.adoc[]
 
-==== cURL
-Performs HTTP requests. No cookie handled automatically.
+include::web/websites.adoc[]
 
-|===
-|Argument |Description
+include::ad/ad.adoc[]
 
-|-X
-|Specify HTTP methods: POST, PUT, ...
+:leveloffset: +1
 
-|--header
-|
-
-|--data
-|body: --data 'my data'
-
-|--cookie
-|Set cookie: --cokie name=value
-
-|===
-
-==== dig
-Manually query recursive DNS servers
-
-[source,bash]
-----
-dig google.com @1.1.1.1
-----
-
-==== nmap
-
-
-==== nslookup
-Query Internet name servers interactively
-
-|===
-|Argument |Description
-
-|--type
-|CNAME, A, AAAA, .... Defaults are A then AAAA
-
-|===
-
-==== traceroute
-* maps the path a request take as it heads to the target machine
-* uses UDP by default but can be done by ICMP with a switch
-
-==== whois
-Query who a domain name is registered to. In Europe, personal details are redacted.
-
-==== Wireshark
-Network Packet sniffer
-
-=== Infrastructure
-
-==== Nessus
-Vulnerability scanner (similar to nmap) that doesn't make assumptions when scanning (web app on port 80, ...)
-
-=== Web application hacking
-
-==== BurpSuite
-One-stop shop for web application & mobile app penetration testing. Burp can capture and manipulate all the traffic (request and response) between an attacker and a webserver. Burp exists in Community, Professional and Enterprise editions.
-
-|===
-|Feature |Description
-
-|Proxy
-|Intercept and modify requests/responses when interacting with web applications
-
-|Repeater
-|Capture, modify, then resend the same request numerous times. Good for when we need to craft a payload through trial and error (SQL Injection) or testing the functionality of an endpoint for flaws
-
-|Intruder
-|Rate limited in Community edition. Spray an endpoint with requests (bruteforce, fuzz). Use a proxied request with slightly different info between each request (login, ...)
-
-|Decoder
-|Transform data (decoding, encoding payload)
-
-|Comparer
-|Compare piece of data (word, byte level)
-
-|Sequencer
-|Assess randomness of tokens (session cookie or any random generate data)
-
-|Extender
-|Install extension from Bapp store or create our own in Java, Python (Jython) and Ruby (JRuby)
-
-|===
-
-===== Proxy
-Two ways to proxy our traffic:
-
-* use the embedded browser
-* configure local web browser to proxy our traffic through Burp (most common) -> use FoxyProxy addon
-
-For HTTPS proxying, we need to add Burp cert to add the CA certificate to our list of trusted certificate authorities.
-
-Scoping: configure what gets proxied and logged to ignore proxy traffic to websites we aren't targeting. This is done in Target menu + Proxy Options (Intercept Client Requests -> and URL is in target scope)
-
-===== Intruder
-
-|===
-|Attack Type |Description |Number of requests
-
-|Sniper
-|One set of payloads (wordlist, range of numbers). Intruder sequentially tries all payload in each defined position in turn
-|numberOfWords * numberOfPositions
-
-|Battering Ram
-|One set of payloads. Intruder tries the same payload in every positions.
-|numberOfWords
-
-|Pitchfork
-|Like having numerous Snipers running simultaneously. Uses one payload set per position (max 20) and iterates through them all at once.
-|min number of a list
-
-|Cluster Bomb
-|Multiple payload sets: one per position, up to max 20. Iterates through each payload set individually -> ensure every possible combination of payloads is tested.
-|number of list 1 * number of list 2 * ...
-
-|===
-
-==== Gobuster
-
-==== OWASP ZAP (Zed Attack Proxy)
-Security testing framework like Burp Suite -> robust enumeration tool, test web applications.
-
-|===
-|Feature |Description
-
-|Automated Web Application Scan
-|Auto passively and actively scan a web application, build a sitemap, and discover vulnerabilities.
-
-|Web Spidering
-|Passively build a website map with Spidering
-
-|Unthrottled Intruder
-|Bruteforce login
-
-|Auto forward request
-|OWASP intercept requests automatically, not need to forward individual requests to OWASP
-
-|Extensions
-|Can add extensions from github.com/zaproxy/zap-extensions and other repositories.
-
-|===
-
-BurpSuite to ZAP
-
-* Site Map -> Site Tree
-* HTTP History -> History
-* Scope -> Context
-* Intercepter -> Break
-* Repeater -> Request Editor
-* Intruder -> Fuzzer
-* Scanner -> Active Scan
-* BApp Store -> Add On Marketplace
-
-==== Automated Scan
-Traditional spider -> builds website index without brute-forcing; much quieter than bruteforce but not as comprehensive
-
-Ajax spider -> add-on that integrates in ZAP a crawler of AJAX rich sites called CrawlJax. Can be used with traditional spider for better results. It uses our web browser and proxy.
-
-We need to import ZAP SSL certificate and configure our browser proxy for ZAP.
-
-== Windows
-
-=== Networking
-==== tracert
-* maps the path a request take as it heads to the target machine
-* uses ICMP by default but can be done by UDP with a switch
-
-=== Run command
-
-|===
-|Command |Name |Description
-
-|cmd
-|Command Prompt
-|run command
-
-|compmgmt
-|Computer Management
-|System Tools, Storage, Services and Application
-
-|control.exe
-|Control Panel
-|
-
-|eventvwr.exe
-|Event Viewer
-|Audit of the system
-
-|lusrmgr.msc
-|Local User and Group Management
-|
-
-|msconfig
-|System Configuration
-|Troubleshooting, diagnose startup issues
-
-|msinfo32.exe
-|System Information
-|Advanced info on hardware and software settings
-
-|regedt32.exe
-|Registry Editor
-|
-
-|resmon
-|Resource Monitor
-|htop
-
-|taskmgr
-|Task Manager
-|
-
-|UserAccountControlSettings.exe
-|User Account Control
-|
-
-|winver.exe
-|About Windows
-|Windows version information
-
-|===
 

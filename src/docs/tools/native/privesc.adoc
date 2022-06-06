@@ -1,0 +1,45 @@
+= Privilege Escalation
+
+== Linux
+
+=== LinEnum
+https://github.com/rebootuser/LinEnum/blob/master/LinEnum.sh[LinEnum] is a bash script that tries several methods for privesc.
+
+To get the script on the target machine, we can either create a http server on the attacker and retrieve it from there (wget) or copy the script code in a file from a reverse shell.
+
+[source, bash]
+----
+python3 -m http.server 8000
+----
+
+==== Important section in output
+* Kernel information: list kernel exploit available for this machine
+* Can we read/write sensitive files: world writeable files are listed
+* SUID files: files with this bit set runs with the permissions of the owner -> we want root most likely
+* crontab contents
+
+=== Linpeas.sh
+Can be found https://linpeas.sh/[here] and https://github.com/carlospolop/PEASS-ng[Github]
+
+=== Linux Smart Enumeration
+Can be found https://github.com/diego-treitos/linux-smart-enumeration[here]
+
+== Windows
+
+=== Winpeas
+https://github.com/carlospolop/PEASS-ng
+
+=== PowerUp
+Download from https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/master/Privesc/PowerUp.ps1[Github]
+
+Upload it via Metasploit meterpreter
+
+[source, bash]
+----
+meterpreter > upload /tmp/PowerUp.ps1
+meterpreter > load powershell
+meterpreter > powershell_shell
+PS > . .\PowerUp.ps1
+----
+
+Check service with CanRestart "true" and unquoted service path vulnerability. The CanRestart option being true, allows us to restart a service on the system, the directory to the application is also write-able. This means we can replace the legitimate application with our malicious one, restart the service, which will run our infected program!

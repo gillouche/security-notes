@@ -1,6 +1,154 @@
 = Encryption
 
+== Terminology
+
+|===
+
+|Term |Explanation
+
+|Asymmetric encryption
+|Use different keys to encrypt and decrypt.
+
+|Brute force
+|Attacking cryptography by trying every different password or key.
+
+|Cipher
+|A method of encrypting or decrypting data. Modern ciphers are cryptographic but there are many non cryptographic ciphers like Caesar.
+
+|Ciphertext
+|The result of encrypting a plaintext, encrypted data.
+
+|Cryptanalysis
+|Attacking cryptography by finding a weakness in the underlying maths
+
+|Encoding
+|Not a form of encryption, just a form of data representation like base64 or hexadecimal. Immediately reversible.
+
+|Encryption
+|Transforming data into ciphertext using a cipher
+
+|Hash
+|Output of a hash function
+
+|Key
+|Some information that is needed to correctly decrypt the ciphertext and obtain a plaintext.
+
+|Passphrase
+|Separate to the key, a passphrase is similar to a password and used to protect a key. Only decrypts the key and never leaves the system (SSH).
+
+|Plaintext
+|Data before encryption or hashing, often text but could also be a photograph or other file instead
+
+|Symmetric encryption
+|Use the same key to encrypt and decrypt.
+
+|===
+
 == Hashing
-One-way process that is used to transform data into a unique signature. The resulting output must be impossible to reverse.
+One-way process (no key) that is used to transform data into a unique signature. The resulting output has a fixed-size (digest) and must be impossible to reverse.
 
 Frequently used to verify the integrity of files and documents -> even smallest change will result in the hashsum changing significantly; or password hashing to not store them in plain text.
+
+Hash functions are uniform. A 16-byte hash function (like md5) has 2^128 different possible outputs and each of those is about equally likely to be an output.
+
+=== Hash collision
+When 2 different inputs give the same output. Hash functions are designed to avoid this as best as they can.
+
+Pigeonhole effect: there are set number of different output values for the hash function, but we can give it any size input. If we have 128 pigeons and 96 pigeonholes -> need to share.
+
+SHA1 and MD5 have been attacked and are not secure anymore.
+
+=== Rainbow table
+Lookup table of hashes to plaintexts. They take time to create.
+
+https://crackstation.net
+
+=== Salt
+Don't encrypt password, use hashing+salt! If someone gets the key, passwords can be decrypted.
+
+Salt value is randomly generated and stored in the database, unique to each user. The salt is added to either the start or the end of the password before it's hashed. Salts don't need to be kept private.
+
+Hash functions like bcrypt and sha512 crypt handle this automatically.
+
+=== Recognize password hashes
+Use tool such as https://pypi.org/project/hashID/ or https://gitlab.com/kalilinux/packages/hash-identifier/-/tree/kali/master but they are unreliable for many formats; only for the hashes that have a prefix.
+
+If we find hash in a web app DB, it is more likely md5 than NTLM.
+
+Unix style password: $format$rounds$salt$hash stored in /etc/shadow
+
+Windows passwords are hashed using NTLM, variant of md4. Visually identical to md4 and md5 hashes. Stored in the SAM (dump with mimikatz tool).
+
+https://hashcat.net/wiki/doku.php?id=example_hashes
+
+https://hashes.com/en/tools/hash_identifier
+
+=== Integrity
+Check that the file hasn't been modified with a hash. If something changed in the file, the hash will be different. Can also use hashing to find duplicates files.
+
+HMAC is a method of using a cryptographic hashing function to verify the authenticity and integrity of data.
+
+A HMAC can be used to ensure that the person who created the HMAC is who they say they are (authenticity), and that the message hasn’t been modified or corrupted (integrity). They use a secret key, and a hashing algorithm in order to produce a hash.
+
+=== Dictionary attack
+Take the hash value of something and a list of possible values. The hash algorithm must be known. Use a tool like John the ripper to hash each word of the list using the algorithm and compare it with the initial hash value to find the password.
+
+== Cryptography
+Used to protect confidentiality, ensure integrity, ensure authenticity.
+
+Standards like PCI-DSS state that data should be encrypted both at rest and in transit (payment card details, ...).
+
+=== Types of encryption
+Symmetric encryption uses the same key to encrypt and decrypt data like DES (broken) and AES; these use smaller keys (128, 256 bit keys).
+
+Asymmetric encryption uses a pair of keys, one to encrypt and the other in the pair to decrypt like RSA and Elliptic Curve Cryptography. Normally referred to as public/private keys. Data encrypted by the private key can be decrypted by the public key and vice versa. This encryption tends to be slower and uses larger keys (2048 to 4096 bit for RSA).
+
+=== Maths
+RSA (Rivest Shamir Adleman) is based on the mathematically difficult problem of working out the factors of a large number. It’s very quick to multiply two prime numbers together, say 17*23 = 391, but it’s quite difficult to work out what two prime numbers multiply together to make 14351 (113x127 for reference).
+
+The key variables that we need to know about for RSA in CTFs are p, q, m, n, e, d, and c.
+
+* p and q are large prime numbers
+* n is the product of p and q
+* public key is n and e
+* private key is n and d
+* m is used to represent the message in plaintext
+* c represents the ciphertext (encrypted text)
+
+=== Establishing keys using asymmetric cryptography
+How do we agree a key with the server without transmitting the key for people snooping to see?
+
+Send secret code using server's public key. Server decrypts using its private key. The secret code is a symmetric encryption key.
+
+This used asymmetric cryptography once ,so it is fast, and now it is possible to privately communicate using the symmetric encryption.
+
+In the real world, we need a little more cryptography to verify the person we are talking to is who they say they are -> use digital signatures and certificates.
+
+https://robertheaton.com/2014/03/27/how-does-https-actually-work/
+
+==== Digital signatures and certificates
+Digital signatures are a way to prove the authenticity of files, to prove who created or modified them. Using asymmetric cryptography, we produce a signature with our private key that can be verified by our public key.
+
+Certificates are also a key use of public key cryptography linked to digital signatures (commonly used for HTTPS).
+
+Certificates have a chain of trust starting with root CA (certificate authority) which are automatically trusted bout our device, OS, browser from install. Certs below that are trusted because the root CA said they trusted these organisations. There are long chains of trust.
+
+==== Diffie Hellman Key Exchange
+No key exchange with asymmetric cryptography. The 2 parties generate respective secrets (A and B). They also have some common material that's public (C).
+
+Assumptions:
+
+* combination secrets and material is impossible or very difficult to separate
+* the order that they are combined in doesn't matter
+
+The 2 parties combine their secrets with the common material and form AC and BC. They will then send these to each other and combine that with their secrets to form two identical keys, both ABC and use this to communicate.
+
+Often used with RSA to prevent man in the middle attacks.
+
+=== PGP, GPG, AES
+PGP = pretty good privacy; software that implements encryption for encrypting files, performing digital signing and more.
+
+GPG (GnuPG) is an open source implementation of PGP from the GNU project.
+
+AES, sometimes called Rijndael after its creators, stands for Advanced Encryption Standard. It is a replacement for DES. AES and DES both operate on blocks of data (block is a fixed size series of bits).
+
